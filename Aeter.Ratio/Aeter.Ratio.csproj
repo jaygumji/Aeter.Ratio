@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Aeter Ratio Class Library. Serialization, locking etc</Description>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Authors>Johan Johnsson</Authors>
+    <PackageId>Aeter.Ratio</PackageId>
+    <PackageTags>Serialization;IL;Lock</PackageTags>
+    <PackageProjectUrl>https://github.com/Jaygumji/Aeter.Ratio</PackageProjectUrl>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/jaygumji/Aeter.Ratio/master/LICENSE</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
+    <PackageReference Include="System.Reflection.Emit.ILGeneration" Version="4.7.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>
