@@ -1,7 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-using Aeter.Ratio.IoC;
+using Aeter.Ratio.DependencyInjection;
 using Aeter.Ratio.Serialization.Manual;
 using System;
 
@@ -18,12 +18,12 @@ namespace Aeter.Ratio.Serialization
         private readonly IGraphTravellerProvider _travellerProvider;
 
         public SerializationEngine()
-            : this(new IoCContainer())
+            : this(new DependencyInjectionContainer())
         {
         }
 
         public SerializationEngine(IGraphTravellerProvider travellerProvider)
-            : this(new IoCContainer(), travellerProvider)
+            : this(new DependencyInjectionContainer(), travellerProvider)
         {
         }
 

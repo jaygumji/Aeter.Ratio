@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Binary;
-using Aeter.Ratio.IoC;
+using Aeter.Ratio.DependencyInjection;
 using Aeter.Ratio.Serialization;
 using System.IO;
 
@@ -21,7 +21,7 @@ namespace Aeter.Ratio.Db.Serialization
         {
         }
 
-        public ModelDataSerializer(IBinaryBufferPool bufferPool) : this(new IoCContainer(), bufferPool)
+        public ModelDataSerializer(IBinaryBufferPool bufferPool) : this(new DependencyInjectionContainer(), bufferPool)
         {
         }
 

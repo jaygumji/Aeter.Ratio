@@ -7,7 +7,7 @@ namespace Aeter.Ratio
 {
     public class CodedException : Exception
     {
-        public const int IoCAmbigiousConstructor = 1001;
+        public const int DependencyInjectionAmbigiousConstructor = 1001;
 
         public CodedException()
         {
