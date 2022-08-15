@@ -103,8 +103,8 @@ namespace Aeter.Ratio.Test.DependencyInjection
             var t1Ready = new ManualResetEvent(false);
             var t2Ready = new ManualResetEvent(false);
 
-            Exception exception1 = null;
-            Exception exception2 = null;
+            Exception? exception1 = null;
+            Exception? exception2 = null;
 
             var t1 = new Thread(state => exception1 = ThreadedScopeThreadRun(t1Ready, t2Ready));
             var t2 = new Thread(state => exception2 = ThreadedScopeThreadRun(t2Ready, t1Ready));
@@ -132,8 +132,8 @@ namespace Aeter.Ratio.Test.DependencyInjection
             var t1Ready = new ManualResetEvent(false);
             var t2Ready = new ManualResetEvent(false);
 
-            Exception exception1 = null;
-            Exception exception2 = null;
+            Exception? exception1 = null;
+            Exception? exception2 = null;
 
             var t1 = Task.Factory.StartNew(() => exception1 = ThreadedScopeThreadRun(t1Ready, t2Ready));
             var t2 = Task.Factory.StartNew(() => exception2 = ThreadedScopeThreadRun(t2Ready, t1Ready));
@@ -152,7 +152,7 @@ namespace Aeter.Ratio.Test.DependencyInjection
             }
         }
 
-        private Exception ThreadedScopeThreadRun(ManualResetEvent set, ManualResetEvent wait)
+        private Exception? ThreadedScopeThreadRun(ManualResetEvent set, ManualResetEvent wait)
         {
             try {
                 var container = new DependencyInjectionContainer();

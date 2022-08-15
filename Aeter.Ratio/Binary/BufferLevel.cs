@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Aeter.Ratio.Binary
@@ -17,7 +18,7 @@ namespace Aeter.Ratio.Binary
         private class Item
         {
             public DateTime TimeStamp;
-            public byte[] Buffer;
+            public byte[]? Buffer;
         }
 
         public BufferLevel(int size)
@@ -36,14 +37,14 @@ namespace Aeter.Ratio.Binary
                 var index = _cachedBuffers.Count - 1;
                 var item = _cachedBuffers[index];
                 _cachedBuffers.RemoveAt(index);
-                return item.Buffer;
+                return item.Buffer!;
             }
             finally {
                 _sem.Release();
             }
         }
 
-        public bool TryPop(out byte[] buffer)
+        public bool TryPop([MaybeNullWhen(false)] out byte[] buffer)
         {
             _sem.Wait();
             try {
@@ -54,7 +55,7 @@ namespace Aeter.Ratio.Binary
                 var index = _cachedBuffers.Count - 1;
                 var item = _cachedBuffers[index];
                 _cachedBuffers.RemoveAt(index);
-                buffer = item.Buffer;
+                buffer = item.Buffer!;
                 return true;
             }
             finally {

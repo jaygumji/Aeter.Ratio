@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.DependencyInjection;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Aeter.Ratio.Test.Fakes.DependencyInjection
 {
@@ -28,7 +29,7 @@ namespace Aeter.Ratio.Test.Fakes.DependencyInjection
             throw new NotImplementedException();
         }
 
-        public bool TryGet(Type type, out IDependencyInjectionRegistration registration)
+        public bool TryGet(Type type, [NotNullWhen(true)] out IDependencyInjectionRegistration? registration)
         {
             registration = null;
             return false;

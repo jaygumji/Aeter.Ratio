@@ -21,18 +21,18 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void Load(ILGenerator il)
         {
-            if (Instance.Type.GetTypeInfo().IsValueType) {
+            if (Instance.Type?.IsValueType ?? false) {
                 il.LoadAddress(Instance);
             }
             else {
                 il.Load(Instance);
             }
 
-            if (Instance.Type.GetTypeInfo().IsValueType) {
-                il.EmitCall(OpCodes.Call, Info.GetMethod, null);
+            if (Instance.Type?.IsValueType ?? false) {
+                il.EmitCall(OpCodes.Call, Info.GetMethod!, null);
             }
             else {
-                il.EmitCall(OpCodes.Callvirt, Info.GetMethod, null);
+                il.EmitCall(OpCodes.Callvirt, Info.GetMethod!, null);
             }
         }
 
@@ -46,7 +46,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void OnPreSet(ILGenerator il)
         {
-            if (Instance.Type.GetTypeInfo().IsValueType) {
+            if (Instance.Type?.IsValueType ?? false) {
                 il.LoadAddress(Instance);
             }
             else {
@@ -57,10 +57,10 @@ namespace Aeter.Ratio.Reflection.Emit
         protected override void OnSet(ILGenerator il)
         {
             if (Type.GetTypeInfo().IsValueType) {
-                il.EmitCall(OpCodes.Call, Info.SetMethod, null);
+                il.EmitCall(OpCodes.Call, Info.SetMethod!, null);
             }
             else {
-                il.EmitCall(OpCodes.Callvirt, Info.SetMethod, null);
+                il.EmitCall(OpCodes.Callvirt, Info.SetMethod!, null);
             }
         }
 

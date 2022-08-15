@@ -9,23 +9,23 @@ namespace Aeter.Ratio.Reflection.Emit
 {
     public class ILCallMethodSnippet : ILSnippet
     {
-        private readonly IILPointer _instance;
+        private readonly IILPointer? _instance;
         private readonly MethodInfo _method;
         private readonly ILPointer[] _parameters;
-        private readonly ParameterInfo[] _methodParameters;
+        private readonly ParameterInfo[]? _methodParameters;
 
         public ILCallMethodSnippet(MethodInfo method, params ILPointer[] parameters) : this(null, method, parameters)
         {
         }
 
-        public ILCallMethodSnippet(ILPointer instance, MethodInfo method, params ILPointer[] parameters)
+        public ILCallMethodSnippet(ILPointer? instance, MethodInfo method, params ILPointer[] parameters)
         {
             if (instance == null && !method.IsStatic)
                 throw new ArgumentException("Instance must be provided for instance methods");
             if (instance != null && method.IsStatic)
                 throw new ArgumentException("Static method may not be invoked with an instance");
 
-            if (!(method is System.Reflection.Emit.MethodBuilder)) {
+            if (method is not MethodBuilder) {
                 _methodParameters = method.GetParameters();
 
                 if (_methodParameters.Length < parameters.Length)

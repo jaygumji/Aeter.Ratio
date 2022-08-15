@@ -5,10 +5,10 @@ namespace Aeter.Ratio.DependencyInjection
 {
     public class DependencyInjectionScopedInstance
     {
-        public IDependencyInjectionRegistration Registration { get; }
+        public IDependencyInjectionRegistration? Registration { get; }
         public object Instance { get; }
 
-        public DependencyInjectionScopedInstance(IDependencyInjectionRegistration registration, object instance)
+        public DependencyInjectionScopedInstance(IDependencyInjectionRegistration? registration, object instance)
         {
             Registration = registration;
             Instance = instance;

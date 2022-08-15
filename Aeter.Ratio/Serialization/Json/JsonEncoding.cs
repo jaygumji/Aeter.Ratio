@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using Aeter.Ratio.Binary;
@@ -12,27 +13,27 @@ namespace Aeter.Ratio.Serialization.Json
     public class JsonEncoding
     {
 
-        public static readonly JsonEncoding UTF16BE = new JsonEncoding(Encoding.BigEndianUnicode, new EncodingBinaryFormat {
-            MinSize = 2,
-            MaxSize = 4,
-            SizeIncrement = 2,
-            ExpandCodes = new byte[] { 0xd8 },
-            MarkerOffset = 0
-        });
-        public static readonly JsonEncoding UTF16LE = new JsonEncoding(Encoding.Unicode, new EncodingBinaryFormat {
-            MinSize = 2,
-            MaxSize = 4,
-            SizeIncrement = 2,
-            ExpandCodes = new byte[] {0xd8},
-            MarkerOffset = 1
-        });
-        public static readonly JsonEncoding UTF8 = new JsonEncoding(Encoding.UTF8, new EncodingBinaryFormat {
-            MinSize = 1,
-            MaxSize = 4,
-            SizeIncrement = 1,
-            ExpandCodes = new byte[] { 0xc2, 0xe0, 0xf0 },
-            MarkerOffset = 0
-        });
+        public static readonly JsonEncoding UTF16BE = new JsonEncoding(Encoding.BigEndianUnicode, new EncodingBinaryFormat(
+            minSize: 2,
+            maxSize: 4,
+            sizeIncrement: 2,
+            expandCodes: new byte[] { 0xd8 },
+            markerOffset: 0
+        ));
+        public static readonly JsonEncoding UTF16LE = new JsonEncoding(Encoding.Unicode, new EncodingBinaryFormat(
+            minSize: 2,
+            maxSize: 4,
+            sizeIncrement: 2,
+            expandCodes: new byte[] {0xd8},
+            markerOffset: 1
+        ));
+        public static readonly JsonEncoding UTF8 = new JsonEncoding(Encoding.UTF8, new EncodingBinaryFormat(
+            minSize: 1,
+            maxSize: 4,
+            sizeIncrement: 1,
+            expandCodes: new byte[] { 0xc2, 0xe0, 0xf0 },
+            markerOffset: 0
+        ));
 
         public static readonly IFormatProvider NumberFormat =
             new NumberFormatInfo {
@@ -123,7 +124,7 @@ namespace Aeter.Ratio.Serialization.Json
             Base64 = new Base64Converter(baseEncoding);
         }
 
-        public bool RequiresEscape(char c, out byte[] charBytes)
+        public bool RequiresEscape(char c, [MaybeNullWhen(false)] out byte[] charBytes)
         {
             switch (c) {
                 case '\\':

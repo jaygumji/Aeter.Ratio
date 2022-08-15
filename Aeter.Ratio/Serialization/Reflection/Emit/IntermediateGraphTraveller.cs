@@ -8,14 +8,14 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 {
     public class IntermediateGraphTraveller
     {
-        private IGraphTraveller _instance;
+        private IGraphTraveller? _instance;
 
         public Type Type { get; }
         public Type TravellerType { get; private set; }
         public IVisitArgsFactory VisitArgsFactory { get; }
-        public object[] Parameters { get; }
-        public DynamicTravellerBuilder Builder { get; private set; }
-        public Exception Exception { get; private set; }
+        public object?[] Parameters { get; }
+        public DynamicTravellerBuilder? Builder { get; private set; }
+        public Exception? Exception { get; private set; }
 
         public IntermediateGraphTraveller(DynamicTravellerBuilder builder, IVisitArgsFactory visitArgsFactory)
             : this(builder.Type, builder.DynamicTraveller.TravellerType, visitArgsFactory, visitArgsFactory)
@@ -23,7 +23,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             Builder = builder;
         }
 
-        public IntermediateGraphTraveller(Type type, Type travellerType, IVisitArgsFactory visitArgsFactory, params object[] parameters)
+        public IntermediateGraphTraveller(Type type, Type travellerType, IVisitArgsFactory visitArgsFactory, params object?[] parameters)
         {
             Type = type;
             TravellerType = travellerType;
@@ -37,14 +37,16 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                 if (Exception != null) ExceptionDispatchInfo.Capture(Exception).Throw();
                 if (_instance != null) return _instance;
                 if (Builder != null) {
-                    Instance = Builder.DynamicTraveller.GetInstance(VisitArgsFactory);
+                    _instance = Builder.DynamicTraveller.GetInstance(VisitArgsFactory);
+                }
+                else if (TravellerType.BaseType == typeof(EmptyGraphTraveller)) {
+                    return (IGraphTraveller)Activator.CreateInstance(TravellerType)!;
                 }
                 else {
-                    Instance = (IGraphTraveller)Activator.CreateInstance(TravellerType, Parameters);
+                    _instance = (IGraphTraveller)Activator.CreateInstance(TravellerType, Parameters)!;
                 }
                 return _instance;
             }
-            private set { _instance = value; }
         }
 
         public void FinishContructing()

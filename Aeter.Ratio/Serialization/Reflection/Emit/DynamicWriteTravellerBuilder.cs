@@ -5,7 +5,6 @@ using Aeter.Ratio.Reflection;
 using Aeter.Ratio.Reflection.Emit;
 using Aeter.Ratio.Reflection.Emit.Pointers;
 using System;
-using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Aeter.Ratio.Serialization.Reflection.Emit
@@ -52,27 +51,23 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
                 _il.InvokeMethod(_visitorVariable, Members.VisitorVisitValue[valueType], propertyParameter, argsFieldVariable);
             }
-            else if (extPropertyType.Classification == TypeClassification.Dictionary) {
-                var container = extPropertyType.Container.AsDictionary();
-
-                var dictionaryType = container.DictionaryInterfaceType;
+            else if (extPropertyType.Container.AsDictionary(out var dictionary)) {
+                var dictionaryType = dictionary.DictionaryInterfaceType;
                 var cLocal = _il.NewLocal(dictionaryType);
                 _il.Set(cLocal, ILPointer.Property(graphPointer, target.Ref).Cast(dictionaryType));
 
                 _il.InvokeMethod(_visitorVariable, Members.VisitorVisit, cLocal, argsFieldVariable);
 
                 _il.IfNotEqual(cLocal, null)
-                    .Then(() => GenerateDictionaryCode(cLocal, container.ElementType))
+                    .Then(() => GenerateDictionaryCode(cLocal, dictionary.ElementType))
                     .End();
 
                 _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, cLocal, argsFieldVariable);
             }
-            else if (extPropertyType.Classification == TypeClassification.Collection) {
-                var container = extPropertyType.Container.AsCollection();
-
-                var collectionType = extPropertyType.Ref.IsArray && extPropertyType.Container.AsArray().Ranks > 1
+            else if (extPropertyType.Container.AsCollection(out var collection)) {
+                var collectionType = extPropertyType.Ref.IsArray && extPropertyType.Container.AsArray()!.Ranks > 1
                     ? extPropertyType.Ref
-                    : container.CollectionInterfaceType;
+                    : collection.CollectionInterfaceType;
 
                 var cLocal = _il.NewLocal(collectionType);
 
@@ -105,16 +100,15 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
         private void GenerateDictionaryCode(ILVariable dictionary, Type elementType)
         {
-            var elementTypeInfo = elementType.GetTypeInfo();
             _il.Enumerate(dictionary, it => {
-                GenerateEnumerateContentCode(ILPointer.Property(it, elementTypeInfo.GetProperty("Key")), LevelType.DictionaryKey);
-                GenerateEnumerateContentCode(ILPointer.Property(it, elementTypeInfo.GetProperty("Value")), LevelType.DictionaryValue);
+                GenerateEnumerateContentCode(ILPointer.Property(it, elementType.FindProperty("Key")), LevelType.DictionaryKey);
+                GenerateEnumerateContentCode(ILPointer.Property(it, elementType.FindProperty("Value")), LevelType.DictionaryValue);
             });
         }
 
         private void GenerateEnumerateContentCode(ILPointer valueParam, LevelType level)
         {
-            var type = valueParam.Type;
+            var type = valueParam.Type!;
             var extType = _typeProvider.Extend(type);
 
             var visitArgs = GetContentVisitArgs(extType, level);
@@ -122,30 +116,27 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             if (extType.IsValueOrNullableOfValue()) {
                 _il.InvokeMethod(_visitorVariable, Members.VisitorVisitValue[type], valueParam.AsNullable(), visitArgs);
             }
-            else if (extType.Classification == TypeClassification.Dictionary) {
-                var container = extType.Container.AsDictionary();
-                var elementType = container.ElementType;
+            else if (extType.Container.AsDictionary(out var dictionary)) {
+                var elementType = dictionary.ElementType;
 
-                var dictionaryType = container.DictionaryInterfaceType;
+                var dictionaryType = dictionary.DictionaryInterfaceType;
 
                 var dictionaryLocal = _il.NewLocal(dictionaryType);
                 _il.Set(dictionaryLocal, valueParam.Cast(dictionaryType));
 
                 _il.InvokeMethod(_visitorVariable, Members.VisitorVisit, dictionaryLocal, visitArgs);
 
-                var elementTypeInfo = elementType.GetTypeInfo();
                 _il.Enumerate(dictionaryLocal, it => {
-                    GenerateEnumerateContentCode(ILPointer.Property(it, elementTypeInfo.GetProperty("Key")), LevelType.DictionaryKey);
-                    GenerateEnumerateContentCode(ILPointer.Property(it, elementTypeInfo.GetProperty("Value")), LevelType.DictionaryValue);
+                    GenerateEnumerateContentCode(ILPointer.Property(it, elementType.FindProperty("Key")), LevelType.DictionaryKey);
+                    GenerateEnumerateContentCode(ILPointer.Property(it, elementType.FindProperty("Value")), LevelType.DictionaryValue);
                 });
 
                 _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, dictionaryLocal, visitArgs);
             }
-            else if (extType.Classification == TypeClassification.Collection) {
-                var container = extType.Container.AsCollection();
-                var collectionType = type.IsArray && extType.Container.AsArray().Ranks > 1
+            else if (extType.Container.AsCollection(out var collection)) {
+                var collectionType = type.IsArray && extType.Container.AsArray()!.Ranks > 1
                     ? type
-                    : container.CollectionInterfaceType;
+                    : collection.CollectionInterfaceType;
 
                 var collectionLocal = _il.NewLocal(collectionType);
                 _il.Set(collectionLocal, valueParam.Cast(collectionType));
@@ -182,13 +173,13 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
                                     _il.ForLoop(0, new ILCallMethodSnippet(collectionParameter, Members.ArrayGetLength, 1), 1,
                                         r2 => GenerateEnumerateContentCode(
-                                            new ILCallMethodSnippet(collectionParameter, target.Info.GetMethod("Get"), r0, r1, r2),
+                                            new ILCallMethodSnippet(collectionParameter, target.Info.FindMethod("Get"), r0, r1, r2),
                                             LevelType.CollectionItem));
 
                                     _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, collectionParameter, Members.VisitArgsCollectionInCollection);
                                 }
                                 else {
-                                    GenerateEnumerateContentCode(new ILCallMethodSnippet(collectionParameter, target.Info.GetMethod("Get"), r0, r1), LevelType.CollectionItem);
+                                    GenerateEnumerateContentCode(new ILCallMethodSnippet(collectionParameter, target.Info.FindMethod("Get"), r0, r1), LevelType.CollectionItem); ;
                                 }
                             });
                         _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, collectionParameter, Members.VisitArgsCollectionInCollection);
@@ -233,7 +224,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
         private void GenerateChildCall(ILPointer child)
         {
-            var childTravellerInfo = _args.GetTraveller(child.Type);
+            var childTravellerInfo = _args.GetTraveller(child.Type!);
 
             var field = ILPointer.Field(ILArgPointer.This, childTravellerInfo.Field);
             _il.InvokeMethod(field, childTravellerInfo.TravelWriteMethod, _visitorVariable, child);

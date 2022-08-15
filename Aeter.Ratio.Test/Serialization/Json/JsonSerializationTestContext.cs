@@ -49,7 +49,7 @@ namespace Aeter.Ratio.Test.Serialization.Json
         public void AssertDeserialize<T>(string json, T expected)
             where T : IComparable<T>
         {
-            var cmp = new DelegatedComparer<T>((l, r) => l.CompareTo(r));
+            var cmp = new DelegatedComparer<T>((l, r) => l!.CompareTo(r));
             AssertDeserialize(json, expected, cmp);
         }
 
@@ -61,7 +61,7 @@ namespace Aeter.Ratio.Test.Serialization.Json
                 if (l == null && r == null) return 0;
                 if (l == null) return -1;
                 if (r == null) return 1;
-                return l.Value.CompareTo(r.Value);
+                return l.Value!.CompareTo(r.Value);
             });
             AssertDeserialize(json, expected, cmp);
         }

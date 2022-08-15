@@ -7,6 +7,6 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
 {
     public class CollectionOfCollectionGraph
     {
-        public List<List<string>> Value { get; set; }
+        public List<List<string>>? Value { get; set; }
     }
 }

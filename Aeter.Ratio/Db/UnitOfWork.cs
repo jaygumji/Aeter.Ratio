@@ -17,6 +17,9 @@ namespace Aeter.Ratio.Db
         public UnitOfWork(IEnigmaConnection connection)
         {
             _connection = connection;
+            _changeTracker = new();
+            _model = new();
+            _binaryConverterProvider = new EntityBinaryConverterProvider();
         }
 
         protected virtual void OnModelBuilding(IEnigmaSchemaModelBuilder modelBuilder)

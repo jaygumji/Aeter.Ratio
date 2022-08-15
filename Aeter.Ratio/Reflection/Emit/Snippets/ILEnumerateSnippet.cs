@@ -20,8 +20,8 @@ namespace Aeter.Ratio.Reflection.Emit
 
         static ILEnumerateSnippet()
         {
-            EnumeratorMoveNext = typeof(IEnumerator).GetTypeInfo().GetMethod("MoveNext");
-            DisposableDispose = typeof(IDisposable).GetTypeInfo().GetMethod("Dispose");
+            EnumeratorMoveNext = typeof(IEnumerator).FindMethod(nameof(IEnumerator.MoveNext));
+            DisposableDispose = typeof(IDisposable).FindMethod(nameof(IDisposable.Dispose));
         }
 
         public ILEnumerateSnippet(ILPointer enumerable, ILGenerationMethodHandler<ILPointer> iterateBody)
@@ -38,11 +38,11 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void OnGenerate(ILGenerator il)
         {
-            if (!_enumerable.Type.TryGetInterface(typeof(IEnumerable<>), out var enumerableType)) {
-                throw new InvalidOperationException("Could not enumerate the type " + _enumerable.Type.FullName);
+            if (!_enumerable.Type!.TryGetInterface(typeof(IEnumerable<>), out var enumerableType)) {
+                throw new InvalidOperationException("Could not enumerate the type " + _enumerable.Type!.FullName);
             }
 
-            var getEnumerator = ILSnippet.Call(_enumerable, enumerableType.GetRuntimeMethod("GetEnumerator", Type.EmptyTypes));
+            var getEnumerator = ILSnippet.Call(_enumerable, enumerableType.GetRuntimeMethod("GetEnumerator", Type.EmptyTypes)!);
 
             var elementType = enumerableType.GetTypeInfo().GetGenericArguments()[0];
             var itLocal = il.NewLocal(getEnumerator.ReturnType);

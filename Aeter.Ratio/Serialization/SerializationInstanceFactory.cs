@@ -22,11 +22,11 @@ namespace Aeter.Ratio.Serialization
         public object CreateInstance(Type type)
         {
             if (_instanceFactory != null
-                && _instanceFactory.TryGetInstance(type, out object instance)) {
+                && _instanceFactory.TryGetInstance(type, out var instance)) {
                 return instance;
             }
 
-            if (Activators.TryGetValue(type, out DynamicActivator activator)) {
+            if (Activators.TryGetValue(type, out var activator)) {
                 return activator.Activate();
             }
 

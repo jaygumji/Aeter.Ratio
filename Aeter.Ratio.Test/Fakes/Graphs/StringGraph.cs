@@ -7,6 +7,6 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
 {
     public class StringGraph : ISingleValueGraph<string>
     {
-        public String Value { get; set; }
+        public String? Value { get; set; }
     }
 }

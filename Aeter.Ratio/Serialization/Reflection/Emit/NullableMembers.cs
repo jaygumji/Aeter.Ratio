@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Reflection;
 using System;
 using System.Reflection;
 
@@ -19,10 +20,9 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
         {
             NullableType = NullableTypeDefinition.MakeGenericType(elementType);
 
-            var typeInfo = NullableType.GetTypeInfo();
-            Constructor = typeInfo.GetConstructor(new[] { elementType });
-            GetHasValue = typeInfo.GetProperty("HasValue").GetGetMethod();
-            GetValue = typeInfo.GetProperty("Value").GetGetMethod();
+            Constructor = NullableType.FindConstructor(elementType);
+            GetHasValue = NullableType.FindProperty("HasValue").GetMethod!;
+            GetValue = NullableType.FindProperty("Value").GetMethod!;
         }
     }
 }

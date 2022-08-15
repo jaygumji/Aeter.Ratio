@@ -13,6 +13,7 @@ using Aeter.Ratio.Db.Linq;
 namespace Aeter.Ratio.Db
 {
     public class EnigmaQueryableSet<TEntity> : IQueryableSet<TEntity>
+        where TEntity : notnull
     {
         private readonly IEntityChangeTracker _changeTracker;
         private readonly IKeyExtractor _keyExtractor;
@@ -27,7 +28,7 @@ namespace Aeter.Ratio.Db
 
         public IEnumerator<TEntity> GetEnumerator()
         {
-            return null;
+            throw new NotImplementedException();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

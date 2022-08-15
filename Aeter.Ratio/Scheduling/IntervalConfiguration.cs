@@ -7,8 +7,14 @@ namespace Aeter.Ratio.Scheduling
 {
     public class IntervalConfiguration : IDateTimeConfiguration
     {
-        public IDateConfiguration Date { get; set; }
-        public TimeSpan Interval { get; set; }
+        public IntervalConfiguration(IDateConfiguration date, TimeSpan interval)
+        {
+            Date = date;
+            Interval = interval;
+        }
+
+        public IDateConfiguration Date { get; }
+        public TimeSpan Interval { get; }
 
         public DateTime GetNext(DateTime @from)
         {

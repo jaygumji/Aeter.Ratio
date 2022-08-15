@@ -6,8 +6,6 @@ using Aeter.Ratio.Serialization;
 
 namespace Aeter.Ratio.Test.Serialization.Fakes
 {
-
-    
     public class FakeWriteVisitor : IWriteVisitor
     {
         private readonly WriteStatistics _statistics = new WriteStatistics();
@@ -17,13 +15,13 @@ namespace Aeter.Ratio.Test.Serialization.Fakes
             get { return _statistics; }
         }
 
-        public void Visit(object level, VisitArgs args)
+        public void Visit(object? level, VisitArgs args)
         {
             Statistics.VisitCount++;
             _statistics.AckVisited(args);
         }
 
-        public void Leave(object level, VisitArgs args)
+        public void Leave(object? level, VisitArgs args)
         {
             Statistics.LeaveCount++;
         }
@@ -106,7 +104,7 @@ namespace Aeter.Ratio.Test.Serialization.Fakes
             _statistics.AckVisited(args);
         }
 
-        public void VisitValue(string value, VisitArgs args)
+        public void VisitValue(string? value, VisitArgs args)
         {
             Statistics.VisitStringCount++;
             _statistics.AckVisited(args);
@@ -118,7 +116,7 @@ namespace Aeter.Ratio.Test.Serialization.Fakes
             _statistics.AckVisited(args);
         }
 
-        public void VisitValue(byte[] value, VisitArgs args)
+        public void VisitValue(byte[]? value, VisitArgs args)
         {
             Statistics.VisitBlobCount++;
             _statistics.AckVisited(args);

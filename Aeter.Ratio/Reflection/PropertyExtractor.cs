@@ -23,11 +23,11 @@ namespace Aeter.Ratio.Reflection
             var propertyNames = path.Split('.');
             var containerType = type;
             foreach (var propertyName in propertyNames) {
-                var property = containerType.GetTypeInfo().GetProperty(propertyName);
+                var property = containerType.FindProperty(propertyName);
                 var extendedPropertyType = new ExtendedType(property.PropertyType);
 
-                containerType = extendedPropertyType.Classification == TypeClassification.Collection
-                    ? extendedPropertyType.Container.AsCollection().ElementType
+                containerType = extendedPropertyType.Container.AsCollection(out var collection)
+                    ? collection.ElementType
                     : property.PropertyType;
 
                 action(property, extendedPropertyType);

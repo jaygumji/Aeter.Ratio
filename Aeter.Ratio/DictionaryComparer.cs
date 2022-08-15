@@ -9,8 +9,7 @@ namespace Aeter.Ratio
     public sealed class DictionaryComparer<TDictionary, TKey, TValue> : IComparer<TDictionary>
         where TDictionary : IReadOnlyDictionary<TKey, TValue>
     {
-        public static readonly DictionaryComparer<TDictionary, TKey, TValue> Default
-            = new DictionaryComparer<TDictionary, TKey, TValue>();
+        public static readonly DictionaryComparer<TDictionary, TKey, TValue> Default = new();
 
         private readonly IComparer<TValue> _valueComparer;
 
@@ -23,7 +22,7 @@ namespace Aeter.Ratio
             _valueComparer = valueComparer;
         }
 
-        public int Compare(TDictionary first, TDictionary second)
+        public int Compare(TDictionary? first, TDictionary? second)
         {
             if (ReferenceEquals(first, second)) {
                 return 0;

@@ -12,23 +12,23 @@ namespace Aeter.Ratio.Serialization.Manual
         private readonly IGraphTraveller<TKey> _keyTraveller;
         private readonly IGraphTraveller<TValue> _valueTraveller;
         private readonly SerializationInstanceFactory _instanceFactory;
-        private readonly IValueVisitor<TKey> _keyVisitor;
-        private readonly IValueVisitor<TValue> _valueVisitor;
-        private readonly Type _keyType;
-        private readonly Type _valueType;
+        private readonly IValueVisitor<TKey>? _keyVisitor;
+        private readonly IValueVisitor<TValue>? _valueVisitor;
+        private readonly Type? _keyType;
+        private readonly Type? _valueType;
 
         public DictionaryGraphTraveller(IGraphTraveller<TKey> keyTraveller, IGraphTraveller<TValue> valueTraveller, SerializationInstanceFactory instanceFactory)
         {
             _keyTraveller = keyTraveller;
             _valueTraveller = valueTraveller;
             _instanceFactory = instanceFactory;
-            if (keyTraveller == null) {
+            if (keyTraveller is EmptyGraphTraveller) {
                 _keyVisitor = ValueVisitor.Create<TKey>();
             }
             else {
                 _keyType = typeof(TKey);
             }
-            if (valueTraveller == null) {
+            if (valueTraveller is EmptyGraphTraveller) {
                 _valueVisitor = ValueVisitor.Create<TValue>();
             }
             else {
@@ -51,9 +51,8 @@ namespace Aeter.Ratio.Serialization.Manual
             var valueArgs = VisitArgs.DictionaryValue;
             TValue TravelValue()
             {
-                TValue value;
                 if (_valueVisitor != null) {
-                    if (!_valueVisitor.TryVisitValue(visitor, valueArgs, out value)) {
+                    if (!_valueVisitor.TryVisitValue(visitor, valueArgs, out var value)) {
                         throw new InvalidGraphException("There were no corresponding value to the dictionary key.");
                     }
                     return value;
@@ -62,10 +61,10 @@ namespace Aeter.Ratio.Serialization.Manual
                 if (visitor.TryVisit(valueArgs) != ValueState.Found) {
                     throw new InvalidGraphException("There were no corresponding value to the dictionary key.");
                 }
-                value = (TValue)_instanceFactory.CreateInstance(_valueType);
-                _valueTraveller.Travel(visitor, value);
+                var newValue = (TValue)_instanceFactory.CreateInstance(_valueType!);
+                _valueTraveller.Travel(visitor, newValue);
                 visitor.Leave(valueArgs);
-                return value;
+                return newValue;
             }
             var keyArgs = VisitArgs.DictionaryKey;
             if (_keyVisitor != null) {
@@ -76,7 +75,7 @@ namespace Aeter.Ratio.Serialization.Manual
                 return;
             }
             while (visitor.TryVisit(keyArgs) == ValueState.Found) {
-                var key = (TKey)_instanceFactory.CreateInstance(_keyType);
+                var key = (TKey)_instanceFactory.CreateInstance(_keyType!);
                 _keyTraveller.Travel(visitor, key);
                 visitor.Leave(keyArgs);
 

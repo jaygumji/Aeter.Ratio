@@ -15,9 +15,9 @@ namespace Aeter.Ratio.Reflection.Emit
             _il = il;
         }
 
-        public ILGenerationHandler Condition { get; set; }
-        public ILGenerationHandler Body { get; set; }
-        public ILGenerationHandler ElseBody { get; set; }
+        public ILGenerationHandler? Condition { get; set; }
+        public ILGenerationHandler? Body { get; set; }
+        public ILGenerationHandler? ElseBody { get; set; }
 
         public void End()
         {
@@ -28,24 +28,19 @@ namespace Aeter.Ratio.Reflection.Emit
 
             var endLabel = _il.NewLabel();
 
-            var elseLabel = default(ILLabel);
-            if (ElseBody != null) {
-                elseLabel = _il.NewLabel();
-                elseLabel.TransferLongIfFalse();
+            if (ElseBody == null) {
+                endLabel.TransferLongIfFalse();
+                Body.Invoke();
             }
             else {
-                endLabel.TransferLongIfFalse();
-            }
-
-            Body.Invoke();
-
-            if (ElseBody != null) {
+                var elseLabel = _il.NewLabel();
+                elseLabel.TransferLongIfFalse();
+                Body.Invoke();
                 endLabel.TransferLong();
 
                 elseLabel.Mark();
                 ElseBody.Invoke();
             }
-            
             endLabel.Mark();
         }
     }

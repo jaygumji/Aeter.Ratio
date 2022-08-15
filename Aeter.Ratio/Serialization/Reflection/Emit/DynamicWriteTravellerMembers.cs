@@ -38,44 +38,41 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
         public DynamicWriteTravellerMembers(ITypeProvider provider)
         {
             var visitArgsType = typeof (VisitArgs);
-            var visitArgsTypeInfo = visitArgsType.GetTypeInfo();
-            VisitArgsCollectionItem = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("CollectionItem"));
-            VisitArgsDictionaryKey = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("DictionaryKey"));
-            VisitArgsDictionaryValue = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("DictionaryValue"));
-            VisitArgsCollectionInCollection = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("CollectionInCollection"));
-            VisitArgsDictionaryInCollection = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("DictionaryInCollection"));
-            VisitArgsDictionaryInDictionaryKey = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("DictionaryInDictionaryKey"));
-            VisitArgsDictionaryInDictionaryValue = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("DictionaryInDictionaryValue"));
-            VisitArgsCollectionInDictionaryKey = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("CollectionInDictionaryKey"));
-            VisitArgsCollectionInDictionaryValue = new ILStaticFieldVariable(visitArgsTypeInfo.GetField("CollectionInDictionaryValue"));
+            VisitArgsCollectionItem = visitArgsType.FindField(nameof(VisitArgs.CollectionItem)).AsILPointer();
+            VisitArgsDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.DictionaryKey)).AsILPointer();
+            VisitArgsDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.DictionaryValue)).AsILPointer();
+            VisitArgsCollectionInCollection = visitArgsType.FindField(nameof(VisitArgs.CollectionInCollection)).AsILPointer();
+            VisitArgsDictionaryInCollection = visitArgsType.FindField(nameof(VisitArgs.DictionaryInCollection)).AsILPointer();
+            VisitArgsDictionaryInDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.DictionaryInDictionaryKey)).AsILPointer();
+            VisitArgsDictionaryInDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.DictionaryInDictionaryValue)).AsILPointer();
+            VisitArgsCollectionInDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryKey)).AsILPointer();
+            VisitArgsCollectionInDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryValue)).AsILPointer();
 
             var writeVisitorType = typeof (IWriteVisitor);
-            var writeVisitorTypeInfo = writeVisitorType.GetTypeInfo();
-            VisitorVisit = writeVisitorTypeInfo.GetMethod("Visit");
-            VisitorLeave = writeVisitorTypeInfo.GetMethod("Leave");
+            VisitorVisit = writeVisitorType.FindMethod("Visit");
+            VisitorLeave = writeVisitorType.FindMethod("Leave");
 
             VisitorVisitValue = new Dictionary<Type, MethodInfo>();
             NullableConstructors = new Dictionary<Type, ConstructorInfo>();
             var nullableType = typeof (Nullable<>);
-            foreach (var method in writeVisitorTypeInfo.GetMethods()
+            foreach (var method in writeVisitorType.GetMethods()
                 .Where(m => m.Name == "VisitValue")) {
 
                 var valueType = method.GetParameters()[0].ParameterType;
                 var valueTypeExt = provider.Extend(valueType);
 
                 VisitorVisitValue.Add(valueType, method);
-                if (valueTypeExt.Classification == TypeClassification.Nullable) {
-                    var innerType = valueTypeExt.Container.AsNullable().ElementType;
+                if (valueTypeExt.Container.AsNullable(out var nullable)) {
+                    var innerType = nullable.ElementType;
                     VisitorVisitValue.Add(innerType, method);
 
-                    var nullableTypeInfo = nullableType.MakeGenericType(innerType).GetTypeInfo();
-                    NullableConstructors.Add(innerType, nullableTypeInfo.GetConstructor(new []{innerType}));
+                    NullableConstructors.Add(innerType, nullableType.MakeGenericAndGetConstructor(innerType));
                 }
             }
 
-            EnumeratorMoveNext = typeof (IEnumerator).GetTypeInfo().GetMethod("MoveNext");
-            DisposableDispose = typeof (IDisposable).GetTypeInfo().GetMethod("Dispose");
-            ArrayGetLength = typeof (Array).GetTypeInfo().GetMethod("GetLength");
+            EnumeratorMoveNext = TypeFindMemberExtensions.FindMethod(typeof(IEnumerator), nameof(IEnumerator.MoveNext));
+            DisposableDispose = TypeFindMemberExtensions.FindMethod(typeof (IDisposable), nameof(IDisposable.Dispose));
+            ArrayGetLength = TypeFindMemberExtensions.FindMethod(typeof (Array), nameof(Array.GetLength));
         }
 
     }

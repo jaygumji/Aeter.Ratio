@@ -190,7 +190,7 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
             if (visitor.TryVisitValue(_argsId, out v0) && v0.HasValue)
                 graph.Id = v0.Value;
 
-            String v1;
+            String? v1;
             if (visitor.TryVisitValue(_argsString, out v1))
                 graph.String = v1;
 
@@ -246,7 +246,7 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
             if (visitor.TryVisitValue(_argsBoolean, out v14) && v14.HasValue)
                 graph.Boolean = v14.Value;
 
-            Byte[] v15;
+            Byte[]? v15;
             if (visitor.TryVisitValue(_argsBlob, out v15))
                 graph.Blob = v15;
 
@@ -255,7 +255,7 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
             if (state != ValueState.NotFound) {
                 if (state == ValueState.Found) {
                     var c = new List<string>();
-                    string cv;
+                    string? cv;
                     while (visitor.TryVisitValue(VisitArgs.CollectionItem, out cv) && cv != null)
                         c.Add(cv);
                     graph.Messages = c;
@@ -329,10 +329,8 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
             if (state != ValueState.NotFound) {
                 if (state == ValueState.Found) {
                     IDictionary<string, int> c = new Dictionary<string, int>();
-                    string ck;
-                    while (visitor.TryVisitValue(VisitArgs.DictionaryKey, out ck) && ck != null) {
-                        int? cv;
-                        if (visitor.TryVisitValue(VisitArgs.DictionaryValue, out cv) && cv.HasValue)
+                    while (visitor.TryVisitValue(VisitArgs.DictionaryKey, out string? ck) && ck != null) {
+                        if (visitor.TryVisitValue(VisitArgs.DictionaryValue, out int? cv) && cv.HasValue)
                             c.Add(ck, cv.Value);
                         else
                             throw InvalidGraphException.NoDictionaryValue("IndexedValues");

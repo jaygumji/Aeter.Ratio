@@ -43,23 +43,18 @@ namespace Aeter.Ratio.Serialization.Reflection.Graph
 
         private IGraphProperty Create(SerializableProperty ser, VisitArgs args)
         {
-            Func<SerializableProperty, VisitArgs, IGraphProperty> factory;
-            if (PredefinedGraphPropertyFactories.TryGetValue(ser.Ref.PropertyType, out factory))
+            if (PredefinedGraphPropertyFactories.TryGetValue(ser.Ref.PropertyType, out var factory))
                 return factory(ser, args);
 
-            DictionaryContainerTypeInfo dictionaryTypeInfo;
-            if (ser.Ext.TryGetDictionaryTypeInfo(out dictionaryTypeInfo)) {
+            if (ser.Ext.TryGetDictionaryTypeInfo(out var dictionaryTypeInfo)) {
                 
             }
 
-            CollectionContainerTypeInfo collectionTypeInfo;
-            if (ser.Ext.TryGetCollectionTypeInfo(out collectionTypeInfo)) {
+            if (ser.Ext.TryGetCollectionTypeInfo(out var collectionTypeInfo)) {
                 
             }
 
             return new ComplexGraphProperty(ser, GetOrCreate(ser.Ref.PropertyType), args);
-
-            //throw new ArgumentException(string.Format("Could not create a graph property of property {0} with type {1}", ser.Ref.Name, ser.Ref.PropertyType.FullName));
         }
 
     }

@@ -7,6 +7,6 @@ namespace Aeter.Ratio.Db.Linq
 {
     public interface IEnigmaQueryExecutor
     {
-        object Execute(Expression expression, bool isCollection);
+        object? Execute(Expression expression, bool isCollection);
     }
 }

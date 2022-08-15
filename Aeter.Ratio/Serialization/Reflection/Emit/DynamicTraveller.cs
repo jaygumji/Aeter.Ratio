@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Reflection;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -11,7 +12,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
     {
         private readonly DynamicTravellerMembers _members;
         private bool _isConstructing;
-        private DynamicActivator _activator;
+        private DynamicActivator? _activator;
 
         public DynamicTraveller(Type travellerType, ConstructorInfo constructor, MethodInfo travelWriteMethod, MethodInfo travelReadMethod, DynamicTravellerMembers members)
         {
@@ -33,12 +34,10 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
         public void Complete(Type actualTravellerType)
         {
-            var actualTravellerTypeInfo = actualTravellerType.GetTypeInfo();
-
             TravellerType = actualTravellerType;
-            Constructor = actualTravellerTypeInfo.GetConstructor(_members.TravellerConstructorTypes);
-            TravelWriteMethod = actualTravellerTypeInfo.GetMethod("Travel", TravelWriteMethod.GetParameters().Select(p => p.ParameterType).ToArray());
-            TravelReadMethod = actualTravellerTypeInfo.GetMethod("Travel", TravelReadMethod.GetParameters().Select(p => p.ParameterType).ToArray());
+            Constructor = actualTravellerType.FindConstructor(_members.TravellerConstructorTypes);
+            TravelWriteMethod = actualTravellerType.FindMethod("Travel", TravelWriteMethod.GetParameters().Select(p => p.ParameterType).ToArray());
+            TravelReadMethod = actualTravellerType.FindMethod("Travel", TravelReadMethod.GetParameters().Select(p => p.ParameterType).ToArray());
             _activator = new DynamicActivator(Constructor);
             _isConstructing = false;
         }
@@ -47,7 +46,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
         {
             if (_isConstructing) throw new InvalidOperationException("The type is still being constructed");
 
-            return (IGraphTraveller)_activator.Activate(factory);
+            return (IGraphTraveller)_activator!.Activate(factory);
         }
     }
 }

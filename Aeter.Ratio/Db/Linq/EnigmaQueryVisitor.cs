@@ -14,7 +14,7 @@ namespace Aeter.Ratio.Db.Linq
             _stack = stack;
         }
 
-        public override Expression Visit(Expression node)
+        public override Expression? Visit(Expression? node)
         {
             return base.Visit(node);
         }

@@ -20,12 +20,12 @@ namespace Aeter.Ratio
         public Type Type { get; }
 
         public DynamicActivator(Type type, params Type[] parameterTypes)
-            : this(type.GetTypeInfo().GetConstructor(parameterTypes))
+            : this(type.FindConstructor(parameterTypes))
         {
         }
 
         public DynamicActivator(Type type, ITypeProvider provider, params Type[] parameterTypes)
-            : this(type.GetTypeInfo().GetConstructor(parameterTypes), provider)
+            : this(type.FindConstructor(parameterTypes), provider)
         {
         }
 
@@ -38,11 +38,11 @@ namespace Aeter.Ratio
         {
             if (constructor == null) throw new ArgumentNullException(nameof(constructor));
             if (provider == null) throw new ArgumentNullException(nameof(provider));
-            Type = constructor.DeclaringType;
+            Type = constructor.DeclaringType!;
 
             var methodName = string.Concat(
                 "D$Activator$",
-                Type.FullName.Replace(".", "_"),
+                Type.FullName!.Replace(".", "_"),
                 "$",
                 constructor.GetParameters().Length,
                 Guid.NewGuid());

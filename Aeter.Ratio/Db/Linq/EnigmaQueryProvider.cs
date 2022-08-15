@@ -39,13 +39,13 @@ namespace Aeter.Ratio.Db.Linq
 
         public object Execute(Expression expression)
         {
-            return _executor.Execute(expression, false);
+            return _executor.Execute(expression, false)!;
         }
 
         public TResult Execute<TResult>(Expression expression)
         {
             return (TResult)_executor.Execute(expression,
-                FactoryTypeProvider.Instance.Extend(typeof(TResult)).Classification == TypeClassification.Collection);
+                FactoryTypeProvider.Instance.Extend(typeof(TResult)).Classification == TypeClassification.Collection)!;
         }
     }
 

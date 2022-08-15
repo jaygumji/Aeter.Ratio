@@ -9,7 +9,7 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
     public class CollectionOfComplexGraph
     {
 
-        public List<Relation> Value { get; set; } 
+        public List<Relation>? Value { get; set; } 
 
     }
 }

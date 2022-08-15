@@ -118,7 +118,7 @@ namespace Aeter.Ratio.Test.Serialization.Json
                 Value = Encoding.Unicode.GetBytes("Hello World")
             };
             _context.AssertDeserialize("{\"value\": \"SABlAGwAbABvACAAVwBvAHIAbABkAA==\"}",
-                expected, (l, r) => BlobComparer.CompareBlobs(l.Value, r.Value));
+                expected, (l, r) => BlobComparer.CompareBlobs(l?.Value, r?.Value));
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace Aeter.Ratio.Test.Serialization.Json
         {
             _context.AssertDeserialize("{\"value\": [\"Hello\", \"big\", \"world\"]}", new CollectionGraph {
                 Value = new List<string> { "Hello", "big", "world" }
-            }, (l, r) => ListComparer<List<string>, string>.Default.Compare(l.Value, r.Value));
+            }, (l, r) => ListComparer<List<string>, string>.Default.Compare(l?.Value, r?.Value));
         }
 
         [Fact]
@@ -146,7 +146,7 @@ namespace Aeter.Ratio.Test.Serialization.Json
                     {2, "big"},
                     {3, "world"}
                 }
-            }, (l, r) => new DictionaryComparer<Dictionary<int, string>, int, string>().Compare(l.Value, r.Value));
+            }, (l, r) => new DictionaryComparer<Dictionary<int, string>, int, string>().Compare(l?.Value, r?.Value));
         }
 
         [Fact]

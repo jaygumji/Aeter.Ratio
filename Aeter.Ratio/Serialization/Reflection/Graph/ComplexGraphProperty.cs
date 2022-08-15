@@ -29,7 +29,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Graph
                 return;
             }
 
-            var childGraph = Activator.CreateInstance(_property.Ref.PropertyType);
+            var childGraph = Activator.CreateInstance(_property.Ref.PropertyType)!;
 
             _propertyType.Visit(childGraph, visitor);
 

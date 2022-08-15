@@ -7,8 +7,8 @@ namespace Aeter.Ratio.Serialization
 {
     public interface IWriteVisitor
     {
-        void Visit(object level, VisitArgs args);
-        void Leave(object level, VisitArgs args);
+        void Visit(object? level, VisitArgs args);
+        void Leave(object? level, VisitArgs args);
 
         void VisitValue(Byte? value, VisitArgs args);
         void VisitValue(Int16? value, VisitArgs args);
@@ -23,8 +23,8 @@ namespace Aeter.Ratio.Serialization
         void VisitValue(Decimal? value, VisitArgs args);
         void VisitValue(TimeSpan? value, VisitArgs args);
         void VisitValue(DateTime? value, VisitArgs args);
-        void VisitValue(String value, VisitArgs args);
+        void VisitValue(String? value, VisitArgs args);
         void VisitValue(Guid? value, VisitArgs args);
-        void VisitValue(byte[] value, VisitArgs args);
+        void VisitValue(byte[]? value, VisitArgs args);
     }
 }

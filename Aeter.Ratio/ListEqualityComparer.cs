@@ -25,7 +25,7 @@ namespace Aeter.Ratio
             _elementEqualityComparer = elementEqualityComparer;
         }
 
-        public bool Equals(TList first, TList second)
+        public bool Equals(TList? first, TList? second)
         {
             if (ReferenceEquals(first, second)) {
                 return true;
@@ -46,8 +46,8 @@ namespace Aeter.Ratio
                     return 0;
                 }
                 var hash = 17;
-                foreach (var element in list) {
-                    hash = hash * 31 + _elementEqualityComparer.GetHashCode(element);
+                for (var i = 0; i < list.Count; i++) {
+                    hash = hash * 31 + _elementEqualityComparer.GetHashCode(list[i]!);
                 }
                 return hash;
             }

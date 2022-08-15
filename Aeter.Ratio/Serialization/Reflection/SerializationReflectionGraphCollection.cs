@@ -30,8 +30,7 @@ namespace Aeter.Ratio.Serialization.Reflection
         public SerializationReflectionGraph GetOrAdd(Type type, out bool wasAdded)
         {
             lock (_lock) {
-                SerializationReflectionGraph graph;
-                if (_graphs.TryGetValue(type, out graph)) {
+                if (_graphs.TryGetValue(type, out var graph)) {
                     wasAdded = false;
                     return graph;
                 }

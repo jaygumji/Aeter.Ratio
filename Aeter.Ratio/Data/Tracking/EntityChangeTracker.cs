@@ -39,8 +39,7 @@ namespace Aeter.Ratio.Data.Tracking
 
         public void TrackRemoved<T>(object key, T entity)
         {
-            IEntityEntry entry;
-            if (_entries.TryGetValue(key, out entry)) {
+            if (_entries.TryGetValue(key, out var entry)) {
                 var editable = (IEditableEntityEntry) entry;
                 editable.ModifyState(EntityState.Removed);
             }

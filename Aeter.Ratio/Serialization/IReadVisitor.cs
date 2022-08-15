@@ -23,8 +23,8 @@ namespace Aeter.Ratio.Serialization
         bool TryVisitValue(VisitArgs args, out Decimal? value);
         bool TryVisitValue(VisitArgs args, out TimeSpan? value);
         bool TryVisitValue(VisitArgs args, out DateTime? value);
-        bool TryVisitValue(VisitArgs args, out String value);
+        bool TryVisitValue(VisitArgs args, out String? value);
         bool TryVisitValue(VisitArgs args, out Guid? value);
-        bool TryVisitValue(VisitArgs args, out byte[] value);
+        bool TryVisitValue(VisitArgs args, out byte[]? value);
     }
 }

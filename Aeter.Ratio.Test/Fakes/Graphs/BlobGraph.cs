@@ -5,6 +5,6 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
 {
     public class BlobGraph
     {
-        public byte[] Value { get; set; }
+        public byte[]? Value { get; set; }
     }
 }

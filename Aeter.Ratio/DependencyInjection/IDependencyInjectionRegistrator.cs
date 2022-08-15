@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Aeter.Ratio.DependencyInjection
 {
@@ -12,7 +13,7 @@ namespace Aeter.Ratio.DependencyInjection
         bool TryRegister(Type type, IDependencyInjectionRegistration registration);
 
         IDependencyInjectionRegistration Get(Type type);
-        bool TryGet(Type type, out IDependencyInjectionRegistration registration);
+        bool TryGet(Type type, [MaybeNullWhen(false)] out IDependencyInjectionRegistration registration);
 
         bool Contains(Type type);
     }

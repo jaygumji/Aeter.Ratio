@@ -21,7 +21,7 @@ namespace Aeter.Ratio.Reflection
             var next = new List<object>();
 
             foreach (var value in values) {
-                var list = (IList) _propertyInfo.GetValue(value);
+                var list = (IList?) _propertyInfo.GetValue(value);
                 if (list == null) continue;
                 foreach (var element in list) next.Add(element);
             }

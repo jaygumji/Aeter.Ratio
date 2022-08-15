@@ -1,6 +1,8 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using System.Diagnostics.CodeAnalysis;
+
 namespace Aeter.Ratio
 {
     /// <summary>
@@ -23,7 +25,7 @@ namespace Aeter.Ratio
         /// <param name="name">The name of the argument</param>
         /// <param name="value">The argument value</param>
         /// <returns><c>true</c> if the argument was found, otherwise false</returns>
-        bool TryGetValue(string name, out object value);
+        bool TryGetValue(string name, [MaybeNullWhen(false)] out object value);
 
         /// <summary>
         /// Gets a value in the list
@@ -39,7 +41,7 @@ namespace Aeter.Ratio
         /// <typeparam name="T">The type of the argument value</typeparam>
         /// <param name="value">The argument value</param>
         /// <returns><c>true</c> if the argument was found, otherwise false</returns>
-        bool TryGetValue<T>(out T value);
+        bool TryGetValue<T>([MaybeNullWhen(false)] out T value);
 
     }
 }

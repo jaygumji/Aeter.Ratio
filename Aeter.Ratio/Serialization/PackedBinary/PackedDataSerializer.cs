@@ -40,7 +40,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             }
         }
 
-        object ITypedSerializer.Deserialize(Stream stream)
+        object? ITypedSerializer.Deserialize(Stream stream)
         {
             return Deserialize(stream);
         }

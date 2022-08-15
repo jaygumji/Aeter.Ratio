@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -24,7 +25,7 @@ namespace Aeter.Ratio.Reflection
             if (type.IsArray) {
                 var ranks = type.GetArrayRank();
                 var elementType = type.GetElementType();
-                return new ArrayContainerTypeInfo(elementType, ranks);
+                return new ArrayContainerTypeInfo(elementType!, ranks);
             }
 
             var typeInfo = type.GetTypeInfo();
@@ -54,7 +55,7 @@ namespace Aeter.Ratio.Reflection
                 }
             }
 
-            return null;
+            return LeafContainerTypeInfo.Instance;
         }
 
         public static Type AsNullable(this Type type)
@@ -62,7 +63,7 @@ namespace Aeter.Ratio.Reflection
             return NullableType.MakeGenericType(type);
         }
 
-        public static bool TryGetInterface(this Type type, Type interfaceType, out Type matchedInterfaceType)
+        public static bool TryGetInterface(this Type type, Type interfaceType, [MaybeNullWhen(false)] out Type matchedInterfaceType)
         {
             var interfaces = type.GetTypeInfo().GetInterfaces();
             var interfaceTypeInfo = interfaceType.GetTypeInfo();
@@ -86,7 +87,7 @@ namespace Aeter.Ratio.Reflection
             return false;
         }
 
-        public static TypeClassification GetClassification(this Type type, IContainerTypeInfo containerInfo = null)
+        public static TypeClassification GetClassification(this Type type, IContainerTypeInfo? containerInfo = null)
         {
             var ti = type.GetTypeInfo();
             if (ti.IsPrimitive) return TypeClassification.Value;

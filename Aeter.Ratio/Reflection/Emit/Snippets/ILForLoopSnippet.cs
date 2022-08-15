@@ -30,6 +30,7 @@ namespace Aeter.Ratio.Reflection.Emit
         public ILForLoopSnippet(ILPointer initialValue, ILGenerationHandler<ILPointer> conditionHandler,
             ILGenerationHandler<ILPointer> bodyHandler, ILPointer increment)
         {
+            if (initialValue.Type == null) throw new ArgumentException($"{nameof(initialValue)}.{nameof(initialValue.Type)} can not be null");
             if (initialValue.Type != increment.Type)
                 throw new ArgumentException("The type of the initial value and the increment value must match");
 
@@ -41,7 +42,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void OnGenerate(ILGenerator il)
         {
-            var value = il.NewLocal(_initialValue.Type);
+            var value = il.NewLocal(_initialValue.Type!);
             il.Set(value, _initialValue);
 
             var labelCondition = il.NewLabel();

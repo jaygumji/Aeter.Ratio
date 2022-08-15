@@ -11,7 +11,7 @@ namespace Aeter.Ratio.Reflection.Emit
     {
 
         private readonly IILPointer _pointer;
-        public override Type Type => _pointer.Type;
+        public override Type? Type => _pointer.Type;
 
         public ILNullablePointer(IILPointer pointer)
         {
@@ -24,24 +24,22 @@ namespace Aeter.Ratio.Reflection.Emit
         {
             _pointer.Load(il);
 
-            var type = _pointer.Type;
-            var typeInfo = type.GetTypeInfo();
+            var type = _pointer.Type!;
 
-            if (!typeInfo.IsValueType) return;
-            if (typeInfo.IsGenericType) {
-                if (typeInfo.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+            if (!type.IsValueType) return;
+            if (type.IsGenericType) {
+                if (type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                     return;
                 }
             }
             else {
-                if (typeInfo.IsEnum) {
+                if (type.IsEnum) {
                     type = Enum.GetUnderlyingType(type);
                 }
             }
 
             var nullableType = type.AsNullable();
-            var nullableTypeInfo = nullableType.GetTypeInfo();
-            var constructor = nullableTypeInfo.GetConstructor(new[] { type });
+            var constructor = nullableType.FindConstructor(type);
 
             il.Emit(OpCodes.Newobj, constructor);
         }

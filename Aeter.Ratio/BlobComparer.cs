@@ -15,12 +15,12 @@ namespace Aeter.Ratio
         {
         }
 
-        public int Compare(byte[] left, byte[] right)
+        public int Compare(byte[]? left, byte[]? right)
         {
             return CompareBlobs(left, right);
         }
 
-        public bool Equals(byte[] x, byte[] y)
+        public bool Equals(byte[]? x, byte[]? y)
         {
             return AreEqual(x, y);
         }
@@ -30,7 +30,7 @@ namespace Aeter.Ratio
             return GetBlobHashCode(blob);
         }
 
-        public static int CompareBlobs(byte[] left, byte[] right)
+        public static int CompareBlobs(byte[]? left, byte[]? right)
         {
             if (left == null) {
                 if (right == null) return 0;
@@ -52,12 +52,12 @@ namespace Aeter.Ratio
             return 0;
         }
 
-        public static bool AreEqual(byte[] left, byte[] right)
+        public static bool AreEqual(byte[]? left, byte[]? right)
         {
             return CompareBlobs(left, right) == 0;
         }
 
-        public static int GetBlobHashCode(byte[] value)
+        public static int GetBlobHashCode(byte[]? value)
         {
             if (value == null) return 0;
 

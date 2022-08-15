@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using Aeter.Ratio.Binary;
@@ -351,7 +352,7 @@ namespace Aeter.Ratio.Serialization.Json
             return arr;
         }
 
-        public bool ReadFieldName(out string name)
+        public bool ReadFieldName([MaybeNullWhen(false)] out string name)
         {
             var literal = ReadLiteral();
             if (literal == JsonLiteral.Comma) {
@@ -408,7 +409,7 @@ namespace Aeter.Ratio.Serialization.Json
             return true;
         }
 
-        public bool ReadField(out string name, out IJsonNode node)
+        public bool ReadField([MaybeNullWhen(false)] out string name, [MaybeNullWhen(false)] out IJsonNode node)
         {
             if (!ReadFieldName(out name)) {
                 node = null;

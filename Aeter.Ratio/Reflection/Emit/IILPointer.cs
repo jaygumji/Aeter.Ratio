@@ -8,7 +8,7 @@ namespace Aeter.Ratio.Reflection.Emit
 {
     public interface IILPointer
     {
-        Type Type { get; }
+        Type? Type { get; }
 
         void Load(ILGenerator il);
         void LoadAddress(ILGenerator il);

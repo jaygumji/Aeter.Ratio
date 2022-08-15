@@ -21,7 +21,7 @@ namespace Aeter.Ratio
             _listEqualityComparer = new ListEqualityComparer<T[], T>(elementEqualityComparer);
         }
 
-        public bool Equals(T[] first, T[] second)
+        public bool Equals(T[]? first, T[]? second)
         {
             return _listEqualityComparer.Equals(first, second);
         }

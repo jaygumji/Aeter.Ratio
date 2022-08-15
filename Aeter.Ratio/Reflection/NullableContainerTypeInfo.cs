@@ -15,9 +15,8 @@ namespace Aeter.Ratio.Reflection
         public NullableContainerTypeInfo(Type type, Type elementType)
         {
             ElementType = elementType;
-            var typeInfo = type.GetTypeInfo();
-            _constructor = new Lazy<ConstructorInfo>(() => typeInfo.GetConstructor(new[] {elementType}));
-            _getHasValueMethod = new Lazy<MethodInfo>(() => typeInfo.GetProperty("HasValue").GetGetMethod());
+            _constructor = new Lazy<ConstructorInfo>(() => type.FindConstructor(elementType));
+            _getHasValueMethod = new Lazy<MethodInfo>(() => type.FindProperty("HasValue").GetMethod!);
         }
 
         public ConstructorInfo Constructor => _constructor.Value;

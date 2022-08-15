@@ -36,7 +36,7 @@ namespace Aeter.Ratio.Reflection.Emit.Pointers
             return new ILArrayElementVariable(array, index);
         }
 
-        public static ILAddPointer Add(this IILPointer left, ILPointer right)
+        public static ILAddPointer Add(this IILPointer? left, ILPointer right)
         {
             if (left == null) throw new ArgumentNullException(nameof(left));
             if (right == null) throw new ArgumentNullException(nameof(right));
@@ -44,7 +44,7 @@ namespace Aeter.Ratio.Reflection.Emit.Pointers
             return new ILAddPointer(left, right);
         }
 
-        public static ILEqualPointer Equal(this IILPointer left, ILPointer right)
+        public static ILEqualPointer Equal(this IILPointer? left, ILPointer? right)
         {
             if (left == null) left = ILPointer.Null;
             if (right == null) right = ILPointer.Null;
@@ -52,7 +52,7 @@ namespace Aeter.Ratio.Reflection.Emit.Pointers
             return new ILEqualPointer(left, right);
         }
 
-        public static ILNegatePointer Negate(this IILPointer value)
+        public static ILNegatePointer Negate(this IILPointer? value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             return new ILNegatePointer(value);

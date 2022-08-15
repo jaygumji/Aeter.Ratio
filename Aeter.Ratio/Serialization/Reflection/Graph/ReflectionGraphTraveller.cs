@@ -24,12 +24,12 @@ namespace Aeter.Ratio.Serialization.Reflection.Graph
 
         public void Travel(IWriteVisitor visitor, T graph)
         {
-            Travel(visitor, (object)graph);
+            Travel(visitor, (object)graph!);
         }
 
         public void Travel(IReadVisitor visitor, T graph)
         {
-            Travel(visitor, (object)graph);
+            Travel(visitor, (object)graph!);
         }
     }
 }

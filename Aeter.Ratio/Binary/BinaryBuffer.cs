@@ -8,7 +8,7 @@ namespace Aeter.Ratio.Binary
 {
     public class BinaryBuffer : IDisposable
     {
-        private readonly IBinaryBufferPool _pool;
+        private readonly IBinaryBufferPool? _pool;
         private bool _isDisposed;
 
         protected Stream Stream { get; }
@@ -17,7 +17,7 @@ namespace Aeter.Ratio.Binary
         public int Position { get; protected set; }
         protected int Size { get; set; }
 
-        public BinaryBuffer(IBinaryBufferPool pool, byte[] buffer, Stream stream)
+        public BinaryBuffer(IBinaryBufferPool? pool, byte[] buffer, Stream stream)
         {
             Size = buffer.Length;
             Stream = stream;
@@ -31,6 +31,8 @@ namespace Aeter.Ratio.Binary
             Verify();
 
             var newSize = Math.Max(length, Size * 2);
+
+            if (_pool == null) throw new NotSupportedException("No pool has been specified, can not expand");
 
             var newBuffer = _pool.AcquireBuffer(newSize);
             System.Buffer.BlockCopy(Buffer, keepPosition, newBuffer, 0, keepLength);
@@ -56,7 +58,7 @@ namespace Aeter.Ratio.Binary
 
             _pool?.Release(Buffer);
 
-            Buffer = null;
+            Buffer = Array.Empty<byte>();
             Position = -1;
             Size = 0;
         }

@@ -7,7 +7,7 @@ namespace Aeter.Ratio.Db.Modelling
 {
     public class EnigmaSchemaEntityIndex
     {
-        public string Name { get; set; }
-        public List<int> FieldIndexPath { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public List<int> FieldIndexPath { get; set; } = new List<int>();
     }
 }

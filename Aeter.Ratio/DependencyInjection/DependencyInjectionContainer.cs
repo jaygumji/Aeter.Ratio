@@ -4,6 +4,7 @@
 using Aeter.Ratio.Reflection;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Aeter.Ratio.DependencyInjection
 {
@@ -25,7 +26,7 @@ namespace Aeter.Ratio.DependencyInjection
             _factory = new DependencyInjectionFactory(_registrator, provider);
         }
 
-        bool IDependencyInjectionRegistrator.TryGet(Type type, out IDependencyInjectionRegistration registration)
+        bool IDependencyInjectionRegistrator.TryGet(Type type, [MaybeNullWhen(false)] out IDependencyInjectionRegistration registration)
         {
             return _registrations.TryGetValue(type, out registration);
         }
@@ -52,7 +53,7 @@ namespace Aeter.Ratio.DependencyInjection
 
         IDependencyInjectionRegistration IDependencyInjectionRegistrator.Get(Type type)
         {
-            if (_registrations.TryGetValue(type, out IDependencyInjectionRegistration registration)) {
+            if (_registrations.TryGetValue(type, out var registration)) {
                 return registration;
             }
 
@@ -69,6 +70,7 @@ namespace Aeter.Ratio.DependencyInjection
         }
 
         public IDependencyInjectionRegistrationSingletonConfigurator<T> Register<T>(T singleton)
+            where T : notnull
         {
             var registration = new DependencyInjectionRegistration<T>(() => singleton) {
                 CanBeScoped = false
@@ -79,6 +81,7 @@ namespace Aeter.Ratio.DependencyInjection
         }
 
         public IDependencyInjectionRegistrationConfigurator<TImplementation> Register<T, TImplementation>()
+            where TImplementation : notnull
         {
             var registration = new DependencyInjectionRegistration<TImplementation>() {
                 CanBeScoped = true
@@ -99,30 +102,30 @@ namespace Aeter.Ratio.DependencyInjection
 
         public T GetInstance<T>()
         {
-            return (T)GetInstance(typeof(T), throwError: true);
+            return (T)GetInstance(typeof(T), throwError: true)!;
         }
 
-        public object GetInstance(Type type)
+        public object? GetInstance(Type type)
         {
             return GetInstance(type, throwError: true);
         }
 
-        public bool TryGetInstance(Type type, out object instance)
+        public bool TryGetInstance(Type type, [MaybeNullWhen(false)] out object instance)
         {
             instance = GetInstance(type, throwError: false);
             return instance != null;
         }
 
-        private object GetInstance(Type type, bool throwError)
+        private object? GetInstance(Type type, bool throwError)
         {
             var scope = DependencyInjectionScope.GetCurrent();
             var hasScope = scope != null;
-            if (hasScope && scope.TryGetInstance(type, out object instance)) {
+            if (hasScope && scope!.TryGetInstance(type, out var instance)) {
                 return instance;
             }
 
-            var hasRegistration = _registrator.TryGet(type, out IDependencyInjectionRegistration registration);
-            if (hasRegistration && registration.MustBeScoped && !hasScope) {
+            var hasRegistration = _registrator.TryGet(type, out var registration);
+            if (hasRegistration && registration!.MustBeScoped && !hasScope) {
                 if (throwError) {
                     throw new InvalidOperationException($"The type {type.FullName} could not be created since it requires a scope");
                 }
@@ -137,11 +140,11 @@ namespace Aeter.Ratio.DependencyInjection
             }
             if (hasScope) {
                 if (hasRegistration) {
-                    if (!registration.CanBeScoped) return newInstance;
-                    scope.Register(registration, newInstance);
+                    if (!registration!.CanBeScoped) return newInstance;
+                    scope!.Register(registration, newInstance);
                 }
                 else {
-                    scope.Register(newInstance);
+                    scope!.Register(newInstance);
                 }
             }
             return newInstance;

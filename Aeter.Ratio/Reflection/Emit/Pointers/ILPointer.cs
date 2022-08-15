@@ -11,7 +11,7 @@ namespace Aeter.Ratio.Reflection.Emit
     public abstract class ILPointer : IILPointer
     {
 
-        public abstract Type Type { get; }
+        public abstract Type? Type { get; }
 
         public ILInstanceFieldVariable Field(FieldInfo field)
         {
@@ -109,7 +109,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         public static ILInstanceFieldVariable Field(ILPointer instance, string fieldName)
         {
-            var field = instance.Type.GetRuntimeField(fieldName)
+            var field = instance.Type?.GetRuntimeField(fieldName)
                 ?? throw new ArgumentException($"Could not find a field on {instance.Type} with name {fieldName}");
 
             return new ILInstanceFieldVariable(instance, field);
@@ -127,7 +127,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         public static ILInstancePropertyVariable Property(ILPointer instance, string propertyName)
         {
-            var property = instance.Type.GetRuntimeProperty(propertyName)
+            var property = instance.Type?.GetRuntimeProperty(propertyName)
                 ?? throw new ArgumentException($"Could not find a property on {instance.Type} with name {propertyName}");
 
             return new ILInstancePropertyVariable(instance, property);

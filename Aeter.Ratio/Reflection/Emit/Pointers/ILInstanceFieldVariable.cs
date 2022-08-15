@@ -21,7 +21,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void Load(ILGenerator il)
         {
-            if (Instance.Type.GetTypeInfo().IsValueType) {
+            if (Instance.Type?.IsValueType ?? false) {
                 il.LoadAddress(Instance);
             }
             else {
@@ -33,7 +33,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void LoadAddress(ILGenerator il)
         {
-            if (Instance.Type.GetTypeInfo().IsValueType) {
+            if (Instance.Type?.IsValueType ?? false) {
                 il.LoadAddress(Instance);
             }
             else {
@@ -45,7 +45,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void OnPreSet(ILGenerator il)
         {
-            if (Instance.Type.GetTypeInfo().IsValueType) {
+            if (Instance.Type?.IsValueType ?? false) {
                 il.LoadAddress(Instance);
             }
             else {

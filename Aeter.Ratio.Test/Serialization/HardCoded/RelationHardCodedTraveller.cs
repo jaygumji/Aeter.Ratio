@@ -47,11 +47,11 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
             if (visitor.TryVisitValue(_argsId0, out v0) && v0.HasValue)
                 graph.Id = v0.Value;
 
-            String v1;
+            String? v1;
             if (visitor.TryVisitValue(_argsName1, out v1))
                 graph.Name = v1;
 
-            String v2;
+            String? v2;
             if (visitor.TryVisitValue(_argsDescription2, out v2))
                 graph.Description = v2;
 

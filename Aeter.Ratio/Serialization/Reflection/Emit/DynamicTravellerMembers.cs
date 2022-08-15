@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Reflection;
 using System;
 using System.Reflection;
 
@@ -23,11 +24,8 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             VisitArgsFactoryType = typeof(IVisitArgsFactory);
             VisitArgsTypeFactoryType = typeof(IVisitArgsTypeFactory);
 
-            var visitArgsFactoryTypeInfo = VisitArgsFactoryType.GetTypeInfo();
-            ConstructVisitArgsMethod = visitArgsFactoryTypeInfo.GetMethod("Construct");
-
-            var visitArgsTypeFactoryTypeInfo = VisitArgsTypeFactoryType.GetTypeInfo();
-            ConstructVisitArgsWithTypeMethod = visitArgsTypeFactoryTypeInfo.GetMethod("ConstructWith");
+            ConstructVisitArgsMethod = VisitArgsFactoryType.FindMethod("Construct");
+            ConstructVisitArgsWithTypeMethod = VisitArgsTypeFactoryType.FindMethod("ConstructWith");
 
             TravellerConstructorTypes = new[] { VisitArgsFactoryType };
         }

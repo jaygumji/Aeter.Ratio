@@ -10,7 +10,7 @@ namespace Aeter.Ratio.Reflection.Emit
     {
         public static ILNullPointer Instance { get; } = new ILNullPointer();
 
-        public override Type Type => null;
+        public override Type? Type => null;
 
         private ILNullPointer() { }
 

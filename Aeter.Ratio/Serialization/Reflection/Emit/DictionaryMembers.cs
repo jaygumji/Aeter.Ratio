@@ -19,17 +19,17 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
         public DictionaryMembers(ExtendedType dictionaryType)
         {
-            var container = dictionaryType.Container.AsDictionary();
+            var container = dictionaryType.Container.AsDictionary()!;
             KeyType = container.KeyType;
             ValueType = container.ValueType;
             ElementType = container.ElementType;
             VariableType = typeof (IDictionary<,>).MakeGenericType(KeyType, ValueType);
 
-            Add = VariableType.GetTypeInfo().GetMethod("Add", new[] {KeyType, ValueType});
+            Add = VariableType.FindMethod("Add", new[] {KeyType, ValueType});
             var instanceType = dictionaryType.Info.IsInterface
                 ? typeof (Dictionary<,>).MakeGenericType(KeyType, ValueType)
                 : dictionaryType.Ref;
-            Constructor = instanceType.GetTypeInfo().GetConstructor(Type.EmptyTypes);
+            Constructor = instanceType.FindConstructor();
             if (Constructor == null) throw InvalidGraphException.NoParameterLessConstructor(dictionaryType.Ref);
         }
 

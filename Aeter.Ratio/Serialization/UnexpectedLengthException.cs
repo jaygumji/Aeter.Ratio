@@ -9,7 +9,7 @@ namespace Aeter.Ratio.Serialization
     {
         public UnexpectedLengthException(VisitArgs args, uint length) : this(args.Name, args.Index, length) { }
 
-        public UnexpectedLengthException(string name, uint index, uint length) : base(string.Format("Unexpected length of {0}, index {1}, value was {2}", name, index, length))
+        public UnexpectedLengthException(string? name, uint index, uint length) : base($"Unexpected length of {name}, index {index}, value was {length}")
         {
         }
     }

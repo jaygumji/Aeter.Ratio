@@ -19,14 +19,13 @@ namespace Aeter.Ratio.Serialization.Reflection.Graph
 
         public void Visit(object graph, IReadVisitor visitor)
         {
-            Int16? value;
-            if (visitor.TryVisitValue(_args, out value) && value.HasValue)
-                _property.Ref.SetValue(graph, value.Value);
+            if (visitor.TryVisitValue(_args, out short? value) && value.HasValue)
+                _property.Ref.SetValue(graph, value);
         }
 
         public void Visit(object graph, IWriteVisitor visitor)
         {
-            var value = (Int16) _property.Ref.GetValue(graph);
+            var value = (short?) _property.Ref.GetValue(graph);
             visitor.VisitValue(value, _args);
         }
     }

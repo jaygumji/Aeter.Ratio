@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Aeter.Ratio.Caching
 {
@@ -66,7 +67,7 @@ namespace Aeter.Ratio.Caching
         /// <param name="key"></param>
         /// <param name="content"></param>
         /// <returns></returns>
-        bool TryGet(object key, out object content);
+        bool TryGet(object key, [MaybeNullWhen(false)] out object content);
     }
 
     /// <summary>
@@ -130,6 +131,6 @@ namespace Aeter.Ratio.Caching
         /// <param name="key"></param>
         /// <param name="content"></param>
         /// <returns></returns>
-        bool TryGet(TKey key, out TContent content);
+        bool TryGet(TKey key, [MaybeNullWhen(false)] out TContent content);
     }
 }

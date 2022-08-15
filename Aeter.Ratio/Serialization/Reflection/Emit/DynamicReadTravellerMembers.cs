@@ -37,21 +37,21 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
         public DynamicReadTravellerMembers(ITypeProvider provider)
         {
-            var visitArgsType = typeof(VisitArgs).GetTypeInfo();
+            var visitArgsType = typeof(VisitArgs);
 
-            VisitArgsCollectionItem = new ILStaticFieldVariable(visitArgsType.GetField("CollectionItem"));
-            VisitArgsDictionaryKey = new ILStaticFieldVariable(visitArgsType.GetField("DictionaryKey"));
-            VisitArgsDictionaryValue = new ILStaticFieldVariable(visitArgsType.GetField("DictionaryValue"));
-            VisitArgsCollectionInCollection = new ILStaticFieldVariable(visitArgsType.GetField("CollectionInCollection"));
-            VisitArgsDictionaryInCollection = new ILStaticFieldVariable(visitArgsType.GetField("DictionaryInCollection"));
-            VisitArgsDictionaryInDictionaryKey = new ILStaticFieldVariable(visitArgsType.GetField("DictionaryInDictionaryKey"));
-            VisitArgsDictionaryInDictionaryValue = new ILStaticFieldVariable(visitArgsType.GetField("DictionaryInDictionaryValue"));
-            VisitArgsCollectionInDictionaryKey = new ILStaticFieldVariable(visitArgsType.GetField("CollectionInDictionaryKey"));
-            VisitArgsCollectionInDictionaryValue = new ILStaticFieldVariable(visitArgsType.GetField("CollectionInDictionaryValue"));
+            VisitArgsCollectionItem = visitArgsType.FindField(nameof(VisitArgs.CollectionItem)).AsILPointer();
+            VisitArgsDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.DictionaryKey)).AsILPointer();
+            VisitArgsDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.DictionaryValue)).AsILPointer();
+            VisitArgsCollectionInCollection = visitArgsType.FindField(nameof(VisitArgs.CollectionInCollection)).AsILPointer();
+            VisitArgsDictionaryInCollection = visitArgsType.FindField(nameof(VisitArgs.DictionaryInCollection)).AsILPointer();
+            VisitArgsDictionaryInDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.DictionaryInDictionaryKey)).AsILPointer();
+            VisitArgsDictionaryInDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.DictionaryInDictionaryValue)).AsILPointer();
+            VisitArgsCollectionInDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryKey)).AsILPointer();
+            VisitArgsCollectionInDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryValue)).AsILPointer();
 
             var readVisitorType = typeof(IReadVisitor).GetTypeInfo();
-            VisitorTryVisit = readVisitorType.GetMethod("TryVisit");
-            VisitorLeave = readVisitorType.GetMethod("Leave");
+            VisitorTryVisit = readVisitorType.FindMethod("TryVisit");
+            VisitorLeave = readVisitorType.FindMethod("Leave");
 
             VisitorTryVisitValue = new Dictionary<Type, MethodInfo>();
             Nullable = new Dictionary<Type, NullableMembers>();
@@ -59,13 +59,13 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             foreach (var method in readVisitorType.GetMethods()
                 .Where(m => m.Name == "TryVisitValue")) {
 
-                var valueType = method.GetParameters()[1].ParameterType;
-                if (valueType.IsByRef) valueType = valueType.GetElementType();
+                Type valueType = method.GetParameters()[1].ParameterType;
+                if (valueType.IsByRef) valueType = valueType.GetElementType()!;
                 var valueTypeExt = provider.Extend(valueType);
 
                 VisitorTryVisitValue.Add(valueType, method);
-                if (valueTypeExt.Classification == TypeClassification.Nullable) {
-                    var innerType = valueTypeExt.Container.AsNullable().ElementType;
+                if (valueTypeExt.Container.AsNullable(out var nullable)) {
+                    var innerType = nullable.ElementType;
                     VisitorTryVisitValue.Add(innerType, method);
 
                     var nullableMembers = new NullableMembers(innerType);
@@ -74,10 +74,10 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                 }
             }
 
-            EnumeratorMoveNext = typeof(IEnumerator).GetTypeInfo().GetMethod("MoveNext");
-            DisposableDispose = typeof(IDisposable).GetTypeInfo().GetMethod("Dispose");
+            EnumeratorMoveNext = typeof(IEnumerator).FindMethod(nameof(IEnumerator.MoveNext));
+            DisposableDispose = typeof(IDisposable).FindMethod(nameof(IDisposable.Dispose));
 
-            ExceptionNoDictionaryValue = typeof (InvalidGraphException).GetTypeInfo().GetMethod("NoDictionaryValue");
+            ExceptionNoDictionaryValue = typeof(InvalidGraphException).FindMethod(nameof(InvalidGraphException.NoDictionaryValue));
         }
 
     }

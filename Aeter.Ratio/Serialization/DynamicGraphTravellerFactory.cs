@@ -46,7 +46,7 @@ namespace Aeter.Ratio.Serialization
         {
             var traveller = GetOrCreateRoot(type);
             _travellers.Complete();
-            return traveller?.Instance;
+            return traveller?.Instance!;
         }
 
         private IntermediateGraphTraveller GetOrCreateRoot(Type type)
@@ -57,26 +57,24 @@ namespace Aeter.Ratio.Serialization
 
             var containerTypeInfo = type.GetContainerTypeInfo();
             var classification = type.GetClassification(containerTypeInfo);
-            if (classification == TypeClassification.Collection) {
-                var elementType = containerTypeInfo.AsCollection().ElementType;
-                var elementTraveller = GetOrCreateRoot(elementType);
+            if (classification == TypeClassification.Collection && containerTypeInfo.AsCollection(out var collection)) {
                 if (!_travellers.TryGet(type, out traveller)) {
+                    var elementType = collection.ElementType;
                     var travellerType = typeof(CollectionGraphTraveller<,>).MakeGenericType(type, elementType);
-                    traveller = new IntermediateGraphTraveller(type, travellerType, _visitArgsFactory.ConstructWith(type), elementTraveller, _serializationInstanceFactory);
+                    var elementTraveller = GetOrCreateRoot(elementType);
+                    traveller = new IntermediateGraphTraveller(type, travellerType, _visitArgsFactory.ConstructWith(type), elementTraveller.Instance, _serializationInstanceFactory);
                     _travellers.Register(traveller);
                 }
                 return traveller;
             }
-            if (classification == TypeClassification.Dictionary) {
-                var dictContainer = containerTypeInfo.AsDictionary();
-                var keyType = dictContainer.KeyType;
-                var valueType = dictContainer.ValueType;
-
-                var keyTraveller = GetOrCreateRoot(keyType);
-                var valueTraveller = GetOrCreateRoot(valueType);
+            if (classification == TypeClassification.Dictionary && containerTypeInfo.AsDictionary(out var dictContainer)) {
                 if (!_travellers.TryGet(type, out traveller)) {
+                    var keyType = dictContainer.KeyType;
+                    var valueType = dictContainer.ValueType;
                     var travellerType = typeof(DictionaryGraphTraveller<,,>).MakeGenericType(type, keyType, valueType);
-                    traveller = new IntermediateGraphTraveller(type, travellerType, _visitArgsFactory.ConstructWith(type), keyTraveller, valueTraveller, _serializationInstanceFactory);
+                    var keyTraveller = GetOrCreateRoot(keyType);
+                    var valueTraveller = GetOrCreateRoot(valueType);
+                    traveller = new IntermediateGraphTraveller(type, travellerType, _visitArgsFactory.ConstructWith(type), keyTraveller.Instance, valueTraveller.Instance, _serializationInstanceFactory);
                     _travellers.Register(traveller);
                 }
                 return traveller;
@@ -88,10 +86,10 @@ namespace Aeter.Ratio.Serialization
                 return traveller;
             }
             else if (classification == TypeClassification.Value) {
-                return null;
+                return new IntermediateGraphTraveller(type, typeof(EmptyGraphTraveller<>).MakeGenericType(type), _visitArgsFactory.ConstructWith(type));
             }
-            else if (classification == TypeClassification.Nullable) {
-                var underlyingType = containerTypeInfo.AsNullable().ElementType;
+            else if (containerTypeInfo.AsNullable(out var nullable)) {
+                var underlyingType = nullable.ElementType;
                 if (_travellers.TryGet(underlyingType, out traveller)) return traveller;
                 return GetOrCreateRoot(underlyingType);
             }
@@ -102,7 +100,7 @@ namespace Aeter.Ratio.Serialization
 
         public DynamicTraveller PredefineDynamicTraveller(Type type)
         {
-            if (_travellers.TryGet(type, out var traveller)) return traveller.Builder.DynamicTraveller;
+            if (_travellers.TryGet(type, out var traveller)) return traveller.Builder!.DynamicTraveller;
 
             var builder = GetDynamicTravellerBuilder(type);
             traveller = new IntermediateGraphTraveller(builder, _visitArgsFactory.ConstructWith(type));

@@ -42,7 +42,7 @@ namespace Aeter.Ratio.IO
 
         public void Write(BinaryBufferReservation reservation)
         {
-            _writeBuffer.Use(reservation);
+            _writeBuffer.ApplyUInt32Size(reservation);
         }
 
         //public void Write(WriteReservation reservation, UInt32 value)

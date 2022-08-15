@@ -58,13 +58,13 @@ namespace Aeter.Ratio
             return Value.GetHashCode();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj is DataSize)
-                return Value.Equals(((DataSize)obj).Value);
+            if (obj is DataSize size)
+                return Value.Equals(size.Value);
 
-            if (obj is long)
-                return Value.Equals((long)obj);
+            if (obj is long lng)
+                return Value.Equals(lng);
 
             return false;
         }

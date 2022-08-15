@@ -8,20 +8,20 @@ namespace Aeter.Ratio.DependencyInjection
     public class DependencyInjectionRegistration<T> : IDependencyInjectionRegistration<T>
     {
         public Type Type { get; }
-        public Func<T> Factory { get; }
+        public Func<T>? Factory { get; }
 
         public DependencyInjectionRegistration() : this(null)
         {
         }
 
-        public DependencyInjectionRegistration(Func<T> factory)
+        public DependencyInjectionRegistration(Func<T>? factory)
         {
             Type = typeof(T);
             Factory = factory;
         }
 
         public bool CanBeScoped { get; set; }
-        public Action<T> Unloader { get; set; }
+        public Action<T>? Unloader { get; set; }
 
         public bool HasInstanceGetter => Factory != null;
 
@@ -29,12 +29,12 @@ namespace Aeter.Ratio.DependencyInjection
 
         public object GetInstance()
         {
-            return Factory.Invoke();
+            return Factory!.Invoke()!;
         }
 
         T IInstanceFactory<T>.GetInstance()
         {
-            return Factory.Invoke();
+            return Factory!.Invoke();
         }
 
         void IDependencyInjectionRegistration.Unload(object instance)

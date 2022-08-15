@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Aeter.Ratio.DependencyInjection
@@ -11,7 +12,7 @@ namespace Aeter.Ratio.DependencyInjection
     {
 
         private static readonly AsyncLocal<DependencyInjectionScope> ScopeLocal = new AsyncLocal<DependencyInjectionScope>();
-        private Dictionary<Type, DependencyInjectionScopedInstance> _instances;
+        private Dictionary<Type, DependencyInjectionScopedInstance>? _instances;
 
         public DependencyInjectionScope()
         {
@@ -21,10 +22,9 @@ namespace Aeter.Ratio.DependencyInjection
             ScopeLocal.Value = this;
         }
 
-        public DependencyInjectionContainer Container { get; }
-        public DependencyInjectionScope Parent { get; private set; }
+        public DependencyInjectionScope? Parent { get; private set; }
 
-        public int InstanceCount => _instances.Count;
+        public int InstanceCount => _instances?.Count ?? 0;
 
         public void Dispose()
         {
@@ -42,7 +42,7 @@ namespace Aeter.Ratio.DependencyInjection
             }
 
             var storedScope = ScopeLocal.Value;
-            DependencyInjectionScope childScope = null;
+            DependencyInjectionScope? childScope = null;
             while (storedScope != null && !ReferenceEquals(storedScope, this)) {
                 childScope = storedScope;
                 storedScope = storedScope.Parent;
@@ -56,25 +56,28 @@ namespace Aeter.Ratio.DependencyInjection
                 childScope.Parent = storedScope.Parent;
             }
             else {
-                ScopeLocal.Value = storedScope.Parent;
+                ScopeLocal.Value = storedScope.Parent!;
             }
         }
 
         public void Register(IDependencyInjectionRegistration registration, object instance)
         {
+            if (_instances == null) throw new InvalidOperationException("Scope is disposed");
             _instances.Add(registration.Type, new DependencyInjectionScopedInstance(registration, instance));
         }
 
         public void Register(object instance)
         {
+            if (_instances == null) throw new InvalidOperationException("Scope is disposed");
             if (instance == null) return;
             var type = instance.GetType();
             _instances.Add(type, new DependencyInjectionScopedInstance(null, instance));
         }
 
-        public bool TryGetInstance(Type type, out object instance)
+        public bool TryGetInstance(Type type, [MaybeNullWhen(false)] out object instance)
         {
-            if (_instances.TryGetValue(type, out DependencyInjectionScopedInstance instReg)) {
+            if (_instances == null) throw new InvalidOperationException("Scope is disposed");
+            if (_instances.TryGetValue(type, out var instReg)) {
                 instance = instReg.Instance;
                 return true;
             }
@@ -82,7 +85,7 @@ namespace Aeter.Ratio.DependencyInjection
             return false;
         }
 
-        public static DependencyInjectionScope GetCurrent()
+        public static DependencyInjectionScope? GetCurrent()
         {
             return ScopeLocal.Value;
         }

@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 
@@ -24,11 +25,12 @@ namespace Aeter.Ratio.Scheduling
 
         public void Enqueue(DateTime when, T value)
         {
-            List<T> list;
-            lock (_entries) {
-                if (!_entries.TryGetValue(when, out list)) {
-                    list = new List<T>();
-                    _entries.Add(when, list);
+            if (!_entries.TryGetValue(when, out var list)) {
+                lock (_entries) {
+                    if (!_entries.TryGetValue(when, out list)) {
+                        list = new List<T>();
+                        _entries.Add(when, list);
+                    }
                 }
             }
             lock (list) {
@@ -37,7 +39,7 @@ namespace Aeter.Ratio.Scheduling
             _count++;
         }
 
-        public bool TryDequeue(out IEnumerable<T> values)
+        public bool TryDequeue([MaybeNullWhen(false)] out IEnumerable<T> values)
         {
             if (_count == 0) {
                 values = null;

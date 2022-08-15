@@ -23,9 +23,9 @@ namespace Aeter.Ratio.Reflection.Emit
 
         private static Type GetTypeFrom(IILPointer array)
         {
-            var type = array.Type;
-            if (!type.IsArray) throw new ArgumentException("The supplied type must be an array, type was " + type.FullName);
-            return type.GetElementType();
+            var type = array.Type!;
+            if (type is null || !type.IsArray) throw new ArgumentException("The supplied type must be an array, type was " + type?.FullName);
+            return type.GetElementType()!;
         }
 
         protected override void Load(ILGenerator il)

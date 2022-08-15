@@ -11,7 +11,7 @@ namespace Aeter.Ratio.DependencyInjection
 
     public static class InstanceFactory
     {
-        public static T CreateLambda<T>(ConstructorInfo constructor, PropertyInfo[] properties)
+        public static T CreateLambda<T>(ConstructorInfo constructor, PropertyInfo[]? properties)
         {
             var conArgs = constructor.GetParameters();
             var length = conArgs.Length + (properties?.Length ?? 0);
@@ -45,6 +45,7 @@ namespace Aeter.Ratio.DependencyInjection
     }
 
     public class InstanceFactory<TInstance> : IInstanceFactory<TInstance>
+        where TInstance : notnull
     {
         private readonly Func<TInstance> _lambda;
 
@@ -67,6 +68,8 @@ namespace Aeter.Ratio.DependencyInjection
 
 
     public class InstanceFactory<TInstance, TP1> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
     {
         private readonly Func<TP1, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -93,6 +96,9 @@ namespace Aeter.Ratio.DependencyInjection
 
 
     public class InstanceFactory<TInstance, TP1, TP2> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
     {
         private readonly Func<TP1, TP2, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -122,6 +128,10 @@ namespace Aeter.Ratio.DependencyInjection
 
 
     public class InstanceFactory<TInstance, TP1, TP2, TP3> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -153,6 +163,11 @@ namespace Aeter.Ratio.DependencyInjection
 
 
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -186,6 +201,12 @@ namespace Aeter.Ratio.DependencyInjection
 
 
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -219,8 +240,14 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -258,6 +285,14 @@ namespace Aeter.Ratio.DependencyInjection
 
 
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -295,8 +330,16 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -336,8 +379,17 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -379,8 +431,18 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
+        where TP10 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -424,8 +486,19 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
+        where TP10 : notnull
+        where TP11 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -471,8 +544,20 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
+        where TP10 : notnull
+        where TP11 : notnull
+        where TP12 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -520,8 +605,21 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
+        where TP10 : notnull
+        where TP11 : notnull
+        where TP12 : notnull
+        where TP13 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -571,8 +669,22 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
+        where TP10 : notnull
+        where TP11 : notnull
+        where TP12 : notnull
+        where TP13 : notnull
+        where TP14 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -624,8 +736,23 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
+        where TP10 : notnull
+        where TP11 : notnull
+        where TP12 : notnull
+        where TP13 : notnull
+        where TP14 : notnull
+        where TP15 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;
@@ -679,8 +806,24 @@ namespace Aeter.Ratio.DependencyInjection
         }
     }
 
-
     public class InstanceFactory<TInstance, TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, TP16> : IInstanceFactory<TInstance>
+        where TInstance : notnull
+        where TP1 : notnull
+        where TP2 : notnull
+        where TP3 : notnull
+        where TP4 : notnull
+        where TP5 : notnull
+        where TP6 : notnull
+        where TP7 : notnull
+        where TP8 : notnull
+        where TP9 : notnull
+        where TP10 : notnull
+        where TP11 : notnull
+        where TP12 : notnull
+        where TP13 : notnull
+        where TP14 : notnull
+        where TP15 : notnull
+        where TP16 : notnull
     {
         private readonly Func<TP1, TP2, TP3, TP4, TP5, TP6, TP7, TP8, TP9, TP10, TP11, TP12, TP13, TP14, TP15, TP16, TInstance> _lambda;
         private readonly IInstanceFactory<TP1> _p1;

@@ -6,14 +6,14 @@ using System.Collections.Generic;
 
 namespace Aeter.Ratio
 {
-    public delegate int CompareHandler<in T>(T x, T y);
+    public delegate int CompareHandler<in T>(T? x, T? y);
 
     public delegate int HashCodeHandler<in T>(T x);
 
     public class DelegatedComparer<T> : IComparer<T>, IComparer, IEqualityComparer<T>, IEqualityComparer
     {
         private readonly CompareHandler<T> _compareCallback;
-        private readonly HashCodeHandler<T> _hashCodeHandler;
+        private readonly HashCodeHandler<T>? _hashCodeHandler;
 
         public DelegatedComparer(CompareHandler<T> compareCallback)
         {
@@ -26,38 +26,38 @@ namespace Aeter.Ratio
             _hashCodeHandler = hashCodeHandler;
         }
 
-        public int Compare(T x, T y)
+        public int Compare(T? x, T? y)
         {
             return _compareCallback.Invoke(x, y);
         }
 
-        int IComparer.Compare(object x, object y)
+        int IComparer.Compare(object? x, object? y)
         {
-            if (!(x is T)) {
+            if (x is not T) {
                 return -1;
             }
-            if (!(y is T)) {
+            if (y is not T) {
                 return 1;
             }
             return Compare((T) x, (T) y);
         }
 
-        public bool Equals(T x, T y)
+        public bool Equals(T? x, T? y)
         {
             return _compareCallback.Invoke(x, y) == 0;
         }
 
         public int GetHashCode(T obj)
         {
-            return _hashCodeHandler?.Invoke(obj) ?? obj.GetHashCode();
+            return _hashCodeHandler?.Invoke(obj) ?? obj!.GetHashCode();
         }
 
-        bool IEqualityComparer.Equals(object x, object y)
+        bool IEqualityComparer.Equals(object? x, object? y)
         {
-            if (!(x is T)) {
+            if (x is not T) {
                 return false;
             }
-            if (!(y is T)) {
+            if (y is not T) {
                 return false;
             }
             return Equals((T)x, (T)y);
@@ -65,7 +65,7 @@ namespace Aeter.Ratio
 
         int IEqualityComparer.GetHashCode(object obj)
         {
-            if (!(obj is T)) {
+            if (obj is not T) {
                 return obj.GetHashCode();
             }
             return GetHashCode((T) obj);

@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Aeter.Ratio.Serialization.Reflection.Emit
@@ -18,7 +19,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             _completed = new Dictionary<Type, IntermediateGraphTraveller>();
         }
 
-        public bool TryGet(Type type, out IntermediateGraphTraveller traveller)
+        public bool TryGet(Type type, [MaybeNullWhen(false)] out IntermediateGraphTraveller traveller)
         {
             return _pending.TryGetValue(type, out traveller) || _completed.TryGetValue(type, out traveller);
         }

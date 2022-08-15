@@ -40,7 +40,7 @@ namespace Aeter.Ratio.Serialization
 
         private static VisitArgs GetRootArgs(IGraphTraveller traveller)
         {
-            if (traveller == null) return VisitArgs.CreateRoot(LevelType.Value);
+            if (traveller is EmptyGraphTraveller) return VisitArgs.CreateRoot(LevelType.Value);
             if (traveller is ICollectionGraphTraveller) return VisitArgs.CreateRoot(LevelType.Collection);
             if (traveller is IDictionaryGraphTraveller) return VisitArgs.CreateRoot(LevelType.Dictionary);
             return VisitArgs.CreateRoot(LevelType.Single);
@@ -83,7 +83,7 @@ namespace Aeter.Ratio.Serialization
             }
         }
 
-        public object Deserialize(IReadVisitor visitor, Type type)
+        public object? Deserialize(IReadVisitor visitor, Type type)
         {
             if (visitor == null) throw new ArgumentNullException(nameof(visitor));
             if (type == null) throw new ArgumentNullException(nameof(type));
@@ -136,11 +136,11 @@ namespace Aeter.Ratio.Serialization
             if (rootArgs.Type == LevelType.Value) {
                 var valueVisitor = ValueVisitor.Create<T>();
                 return valueVisitor.TryVisitValue(visitor, rootArgs, out var value)
-                    ? value : default;
+                    ? value : default!;
             }
 
             if (visitor.TryVisit(rootArgs) != ValueState.Found) {
-                return default;
+                return default!;
             }
 
             var graph = (T)_instanceFactory.CreateInstance(typeof(T));

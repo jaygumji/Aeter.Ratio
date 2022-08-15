@@ -58,8 +58,7 @@ namespace Aeter.Ratio.Binary
 
         public static IBinaryInformation Of(Type type)
         {
-            IBinaryInformation information;
-            if (!Lookup.TryGetValue(type, out information))
+            if (!Lookup.TryGetValue(type, out var information))
                 throw new ArgumentException("No binary information has been specified for type " + type.FullName);
 
             return information;

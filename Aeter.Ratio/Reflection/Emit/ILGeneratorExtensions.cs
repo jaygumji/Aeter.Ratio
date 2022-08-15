@@ -11,13 +11,13 @@ namespace Aeter.Ratio.Reflection.Emit
     public static class ILGeneratorExtensions
     {
 
-        public static void Load(this ILGenerator gen, IILPointer pointer)
+        public static void Load(this ILGenerator gen, IILPointer? pointer)
         {
             if (pointer == null) pointer = ILPointer.Null;
             pointer.Load(gen);
         }
 
-        public static void Load(this ILGenerator gen, ILPointer pointer)
+        public static void Load(this ILGenerator gen, ILPointer? pointer)
         {
             if (pointer == null) pointer = ILPointer.Null;
             ((IILPointer)pointer).Load(gen);
@@ -33,8 +33,9 @@ namespace Aeter.Ratio.Reflection.Emit
             pointer.LoadAddress(gen);
         }
 
-        public static void LoadAddress(this ILGenerator gen, ILPointer pointer)
+        public static void LoadAddress(this ILGenerator gen, ILPointer? pointer)
         {
+            if (pointer == null) pointer = ILPointer.Null;
             ((IILPointer)pointer).LoadAddress(gen);
         }
 
@@ -44,7 +45,7 @@ namespace Aeter.Ratio.Reflection.Emit
             ((IILVariable)variable).Set(gen);
         }
 
-        public static void Set(this ILGenerator gen, IILVariable variable, IILPointer value)
+        public static void Set(this ILGenerator gen, IILVariable variable, IILPointer? value)
         {
             if (value == null) value = ILPointer.Null;
 
@@ -53,7 +54,7 @@ namespace Aeter.Ratio.Reflection.Emit
             variable.Set(gen);
         }
 
-        public static void Set(this ILGenerator gen, ILVariable variable, ILPointer value)
+        public static void Set(this ILGenerator gen, ILVariable variable, ILPointer? value)
         {
             if (value == null) value = ILPointer.Null;
 
@@ -68,7 +69,7 @@ namespace Aeter.Ratio.Reflection.Emit
             il.Set(f, value);
         }
 
-        public static void Set(this ILGenerator il, ILPointer instance, PropertyInfo property, ILPointer value)
+        public static void Set(this ILGenerator il, ILPointer instance, PropertyInfo property, ILPointer? value)
         {
             var p = ILPointer.Property(instance, property);
             il.Set(p, value);
@@ -132,7 +133,7 @@ namespace Aeter.Ratio.Reflection.Emit
             il.Generate(new ILWhileLoopSnippet(conditionHandler, bodyHandler));
         }
 
-        public static void AreEqual(this ILGenerator il, ILPointer left, ILPointer right)
+        public static void AreEqual(this ILGenerator il, ILPointer? left, ILPointer? right)
         {
             if (left == null) left = ILPointer.Null;
             if (right == null) right = ILPointer.Null;
@@ -140,7 +141,7 @@ namespace Aeter.Ratio.Reflection.Emit
             il.Load(left.Equal(right));
         }
 
-        public static void Throw(this ILGenerator il, ILPointer exception)
+        public static void Throw(this ILGenerator il, ILPointer? exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
 
@@ -169,7 +170,7 @@ namespace Aeter.Ratio.Reflection.Emit
             return new ILChainIfCondition(il, () => il.AreEqual(left, right));
         }
 
-        public static ILChainIfCondition IfNotEqual(this ILGenerator il, ILPointer left, ILPointer right)
+        public static ILChainIfCondition IfNotEqual(this ILGenerator il, ILPointer? left, ILPointer? right)
         {
             return new ILChainIfCondition(il, () =>
             {

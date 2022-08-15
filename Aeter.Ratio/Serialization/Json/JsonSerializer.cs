@@ -18,12 +18,12 @@ namespace Aeter.Ratio.Serialization.Json
 
         public JsonSerializer() : this(BinaryBufferPool.Instance)
         {
-            FieldNameResolver = new CamelCaseFieldNameResolver();
-            Encoding = JsonEncoding.UTF16LE;
         }
 
         public JsonSerializer(IBinaryBufferPool bufferPool)
         {
+            FieldNameResolver = new CamelCaseFieldNameResolver();
+            Encoding = JsonEncoding.UTF16LE;
             _bufferPool = bufferPool;
             _engine = new SerializationEngine();
         }
@@ -36,7 +36,7 @@ namespace Aeter.Ratio.Serialization.Json
             }
         }
 
-        public object Deserialize(Type type, Stream stream)
+        public object? Deserialize(Type type, Stream stream)
         {
             using (var buffer = _bufferPool.AcquireReadBuffer(stream)) {
                 var visitor = new JsonReadVisitor(Encoding, FieldNameResolver, buffer);
@@ -94,7 +94,7 @@ namespace Aeter.Ratio.Serialization.Json
             }
         }
 
-        object ITypedSerializer.Deserialize(Stream stream)
+        object? ITypedSerializer.Deserialize(Stream stream)
         {
             return Deserialize(stream);
         }

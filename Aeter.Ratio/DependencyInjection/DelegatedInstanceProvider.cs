@@ -6,6 +6,7 @@ using System;
 namespace Aeter.Ratio.DependencyInjection
 {
     public class DelegatedInstanceProvider<TInstance> : IInstanceFactory<TInstance>
+        where TInstance : notnull
     {
         private readonly IInstanceFactory _delegated;
 

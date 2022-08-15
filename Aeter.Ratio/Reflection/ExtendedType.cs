@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Aeter.Ratio.Reflection
@@ -37,23 +38,23 @@ namespace Aeter.Ratio.Reflection
         public bool IsValueOrNullableOfValue()
         {
             if (Classification == TypeClassification.Value) return true;
-            if (Classification != TypeClassification.Nullable) return false;
-            var elementExt = Provider.Extend(Container.AsNullable().ElementType);
+            if (!Container.AsNullable(out var nullable)) return false;
+            var elementExt = Provider.Extend(nullable.ElementType);
             return elementExt.Classification == TypeClassification.Value;
         }
 
         public bool IsEnum()
         {
-            return Info.IsEnum || (Classification == TypeClassification.Nullable && Container.AsNullable().ElementType.GetTypeInfo().IsEnum);
+            return Info.IsEnum || (Container.AsNullable(out var nullable) && nullable.ElementType.IsEnum);
         }
 
         public Type GetUnderlyingEnumType()
         {
             if (Info.IsEnum) return Enum.GetUnderlyingType(Ref);
 
-            if (Classification == TypeClassification.Nullable) {
-                var elementType = Container.AsNullable().ElementType;
-                if (elementType.GetTypeInfo().IsEnum) {
+            if (Container.AsNullable(out var nullable)) {
+                var elementType = nullable.ElementType;
+                if (elementType.IsEnum) {
                     var underlyingType = Enum.GetUnderlyingType(elementType);
                     return typeof (Nullable<>).MakeGenericType(underlyingType);
                 }
@@ -62,22 +63,24 @@ namespace Aeter.Ratio.Reflection
             throw new InvalidOperationException("The type is not an enum");
         }
 
-        public bool TryGetArrayTypeInfo(out ArrayContainerTypeInfo arrayTypeInfo)
+        public bool TryGetNullableTypeInfo([MaybeNullWhen(false)] out NullableContainerTypeInfo nullableTypeInfo)
         {
-            arrayTypeInfo = _containerTypeInfo.Value as ArrayContainerTypeInfo;
-            return arrayTypeInfo != null;
+            return _containerTypeInfo.Value.AsNullable(out nullableTypeInfo);
         }
 
-        public bool TryGetCollectionTypeInfo(out CollectionContainerTypeInfo collectionTypeInfo)
+        public bool TryGetArrayTypeInfo([MaybeNullWhen(false)] out ArrayContainerTypeInfo arrayTypeInfo)
         {
-            collectionTypeInfo = _containerTypeInfo.Value as CollectionContainerTypeInfo;
-            return collectionTypeInfo != null;
+            return _containerTypeInfo.Value.AsArray(out arrayTypeInfo);
         }
 
-        public bool TryGetDictionaryTypeInfo(out DictionaryContainerTypeInfo dictionaryTypeInfo)
+        public bool TryGetCollectionTypeInfo([MaybeNullWhen(false)] out CollectionContainerTypeInfo collectionTypeInfo)
         {
-            dictionaryTypeInfo = _containerTypeInfo.Value as DictionaryContainerTypeInfo;
-            return dictionaryTypeInfo != null;
+            return _containerTypeInfo.Value.AsCollection(out collectionTypeInfo);
+        }
+
+        public bool TryGetDictionaryTypeInfo([MaybeNullWhen(false)] out DictionaryContainerTypeInfo dictionaryTypeInfo)
+        {
+            return _containerTypeInfo.Value.AsDictionary(out dictionaryTypeInfo);
         }
 
     }

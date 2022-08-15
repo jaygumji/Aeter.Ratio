@@ -10,16 +10,16 @@ namespace Aeter.Ratio.Serialization.Manual
         where TCollection : IList<TElement>
     {
         private readonly IGraphTraveller<TElement> _elementTraveller;
-        private readonly SerializationInstanceFactory _instanceFactory;
-        private readonly IValueVisitor<TElement> _valueVisitor;
-        private readonly Type _elementType;
+        private readonly SerializationInstanceFactory? _instanceFactory;
+        private readonly IValueVisitor<TElement>? _valueVisitor;
+        private readonly Type? _elementType;
 
         public LevelType Level => LevelType.Collection;
 
         public CollectionGraphTraveller(IGraphTraveller<TElement> elementTraveller, SerializationInstanceFactory instanceFactory)
         {
             _elementTraveller = elementTraveller;
-            if (elementTraveller == null) {
+            if (elementTraveller is EmptyGraphTraveller) {
                 _valueVisitor = ValueVisitor.Create<TElement>();
             }
             else {
@@ -48,7 +48,7 @@ namespace Aeter.Ratio.Serialization.Manual
                 return;
             }
             while (visitor.TryVisit(itemArgs) == ValueState.Found) {
-                var element = (TElement)_instanceFactory.CreateInstance(_elementType);
+                var element = (TElement)_instanceFactory!.CreateInstance(_elementType!);
                 _elementTraveller.Travel(visitor, element);
                 graph.Add(element);
                 visitor.Leave(itemArgs);

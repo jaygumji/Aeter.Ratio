@@ -52,7 +52,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
 
             Assert.NotNull(actual);
             Assert.NotNull(actual.Test);
-            Assert.Equal(3, actual.Test.Count);
+            Assert.Equal(3, actual.Test!.Count);
 
             Assert.True(graph.Test.SequenceEqual(actual.Test, new ValueDictionaryComparer()));
         }
@@ -73,7 +73,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
 
             Assert.NotNull(actual);
             Assert.NotNull(actual.Test);
-            Assert.Equal(3, actual.Test.Count);
+            Assert.Equal(3, actual.Test!.Count);
 
             Assert.True(graph.Test.Keys.SequenceEqual(actual.Test.Keys));
             Assert.True(graph.Test.Values.SequenceEqual(actual.Test.Values));

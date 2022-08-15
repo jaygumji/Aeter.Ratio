@@ -7,10 +7,19 @@ namespace Aeter.Ratio.Db.Modelling
 {
     public class EnigmaSchemaEntityProperty
     {
-        public string Name { get; set; }
-        public int FieldIndex { get; set; }
-        public TypeClassification TypeClassification { get; set; }
-        public StrictValueType? Type { get; set; }
-        public string CustomType { get; set; }
+        public EnigmaSchemaEntityProperty(string name, int fieldIndex, TypeClassification typeClassification, StrictValueType? type, string customType)
+        {
+            Name = name;
+            FieldIndex = fieldIndex;
+            TypeClassification = typeClassification;
+            Type = type;
+            CustomType = customType;
+        }
+
+        public string Name { get; }
+        public int FieldIndex { get; }
+        public TypeClassification TypeClassification { get; }
+        public StrictValueType? Type { get; }
+        public string CustomType { get; }
     }
 }

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Aeter.Ratio
 {
-    public delegate T InstanceFactoryHandler<out T>(object state);
+    public delegate T InstanceFactoryHandler<out T>(object? state);
 
     public class InstancePool<T>
         where T : class
@@ -29,14 +29,14 @@ namespace Aeter.Ratio
             return Get(null);
         }
 
-        public InstanceHandle<T> Get(object state)
+        public InstanceHandle<T> Get(object? state)
         {
             T instance;
             lock (_free)
             {
                 if (_free.Count > 0)
                 {
-                    instance = _free.Last.Value;
+                    instance = _free.Last!.Value;
                     _free.RemoveLast();
                     _nodeLookup.Remove(instance);
                 }

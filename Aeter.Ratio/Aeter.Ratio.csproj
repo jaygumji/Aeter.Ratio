@@ -9,8 +9,9 @@
     <PackageProjectUrl>https://github.com/Jaygumji/Aeter.Ratio</PackageProjectUrl>
     <PackageLicenseUrl>https://raw.githubusercontent.com/jaygumji/Aeter.Ratio/master/LICENSE</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

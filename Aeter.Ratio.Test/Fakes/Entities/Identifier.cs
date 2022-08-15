@@ -8,7 +8,7 @@ namespace Aeter.Ratio.Testing.Fakes.Entities
         public int Id { get; set; }
         public ApplicationType Type { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             var other = obj as Identifier;
             if (other == null) return false;

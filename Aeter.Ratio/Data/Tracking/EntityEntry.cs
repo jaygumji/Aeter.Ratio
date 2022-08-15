@@ -42,7 +42,7 @@ namespace Aeter.Ratio.Data.Tracking
         /// <value>The state.</value>
         public EntityState State => _state;
 
-        object IEntityEntry.Entity => Entity;
+        object IEntityEntry.Entity => Entity!;
 
         void IEditableEntityEntry.ModifyState(EntityState newState)
         {

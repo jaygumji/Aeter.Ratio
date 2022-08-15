@@ -9,15 +9,15 @@ namespace Aeter.Ratio.Reflection.Emit
     public class ILDelegatedPointer : ILPointer
     {
         private readonly ILGenerationMethodHandler _valueLoader;
-        private readonly ILGenerationMethodHandler _valueAddressLoader;
+        private readonly ILGenerationMethodHandler? _valueAddressLoader;
 
-        public override Type Type { get; }
+        public override Type? Type { get; }
 
-        public ILDelegatedPointer(Type parameterType, ILGenerationMethodHandler valueLoader) : this(parameterType, valueLoader, null)
+        public ILDelegatedPointer(Type? parameterType, ILGenerationMethodHandler valueLoader) : this(parameterType, valueLoader, null)
         {
         }
 
-        public ILDelegatedPointer(Type parameterType, ILGenerationMethodHandler valueLoader, ILGenerationMethodHandler valueAddressLoader)
+        public ILDelegatedPointer(Type? parameterType, ILGenerationMethodHandler valueLoader, ILGenerationMethodHandler? valueAddressLoader)
         {
             Type = parameterType;
             _valueLoader = valueLoader;

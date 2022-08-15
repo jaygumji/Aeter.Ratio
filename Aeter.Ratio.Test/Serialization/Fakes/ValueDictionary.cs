@@ -7,7 +7,7 @@ namespace Aeter.Ratio.Test.Serialization.Fakes
 {
     public class ValueDictionary
     {
-        public Dictionary<string, int> Test { get; set; }
+        public Dictionary<string, int>? Test { get; set; }
     }
 
     public class ValueDictionaryComparer : IEqualityComparer<KeyValuePair<string, int>>

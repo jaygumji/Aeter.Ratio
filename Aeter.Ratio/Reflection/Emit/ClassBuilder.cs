@@ -10,7 +10,7 @@ namespace Aeter.Ratio.Reflection.Emit
     public class ClassBuilder
     {
         private readonly TypeBuilder _typeBuilder;
-        private Type _type;
+        private Type? _type;
         private bool _isSealed;
 
         public ClassBuilder(TypeBuilder typeBuilder)
@@ -18,7 +18,7 @@ namespace Aeter.Ratio.Reflection.Emit
             _typeBuilder = typeBuilder;
         }
 
-        public Type Type { get { return _isSealed ? _type : _typeBuilder; } }
+        public Type Type { get { return _isSealed ? _type! : _typeBuilder; } }
         public bool IsSealed { get { return _isSealed; } }
 
         public FieldInfo DefinePrivateField(string fieldName, Type fieldType)
@@ -68,7 +68,7 @@ namespace Aeter.Ratio.Reflection.Emit
             if (_isSealed) return;
             _isSealed = true;
 
-            _type = _typeBuilder.CreateTypeInfo().AsType();
+            _type = _typeBuilder.CreateTypeInfo()!.AsType();
         }
 
     }

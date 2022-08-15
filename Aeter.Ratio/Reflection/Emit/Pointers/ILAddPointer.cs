@@ -11,7 +11,7 @@ namespace Aeter.Ratio.Reflection.Emit.Pointers
         private readonly IILPointer _left;
         private readonly IILPointer _right;
 
-        public override Type Type => _left.Type;
+        public override Type? Type => _left.Type;
 
         public ILAddPointer(IILPointer left, IILPointer right)
         {

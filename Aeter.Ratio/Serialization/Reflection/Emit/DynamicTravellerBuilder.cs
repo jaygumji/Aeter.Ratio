@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Reflection;
 using Aeter.Ratio.Reflection.Emit;
 using Aeter.Ratio.Reflection.Emit.Pointers;
 using System;
@@ -32,7 +33,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             //_classBuilder.DefinePublicReadOnlyProperty("Level", typeof(LevelType), LevelType.Single);
             _constructorBuilder = _classBuilder.DefineConstructor(typeof(IVisitArgsFactory));
 
-            var baseConstructor = typeof(object).GetTypeInfo().GetConstructor(Type.EmptyTypes);
+            var baseConstructor = typeof(object).GetTypeInfo().FindConstructor(Type.EmptyTypes);
             var il = _constructorBuilder.GetILGenerator();
             il.LoadThis();
             il.Emit(OpCodes.Call, baseConstructor);
@@ -74,11 +75,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                     var dynamicTraveller = _factory.PredefineDynamicTraveller(type);
                     var interfaceType = typeof(IGraphTraveller<>).MakeGenericType(type);
                     var fieldBuilder = _classBuilder.DefinePrivateField(string.Concat("_traveller", type.Name, ++travellerIndex), interfaceType);
-                    childTravellers.Add(type, new PendingChildGraphTraveller {
-                        Field = fieldBuilder,
-                        TravelWriteMethod = dynamicTraveller.TravelWriteMethod,
-                        TravelReadMethod = dynamicTraveller.TravelReadMethod
-                    });
+                    childTravellers.Add(type, new PendingChildGraphTraveller(fieldBuilder, dynamicTraveller));
 
                     var getFactoryCode = ILSnippet.Call(factoryArgument, members.ConstructVisitArgsWithTypeMethod, type);
                     var newTraveller = ILPointer.New(dynamicTraveller.Constructor, getFactoryCode);

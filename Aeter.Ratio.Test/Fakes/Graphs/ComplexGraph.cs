@@ -7,6 +7,6 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
 {
     public class ComplexGraph
     {
-        public Relation Value { get; set; }
+        public Relation? Value { get; set; }
     }
 }

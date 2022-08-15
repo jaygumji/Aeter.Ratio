@@ -303,7 +303,7 @@ namespace Aeter.Ratio.Db.Serialization
             return true;
         }
 
-        public bool TryVisitValue(VisitArgs args, out string value)
+        public bool TryVisitValue(VisitArgs args, out string? value)
         {
             if (args.Index > 0 && !MoveToIndex(args.Index)) {
                 value = null;
@@ -339,7 +339,7 @@ namespace Aeter.Ratio.Db.Serialization
             return true;
         }
 
-        public bool TryVisitValue(VisitArgs args, out byte[] value)
+        public bool TryVisitValue(VisitArgs args, out byte[]? value)
         {
             if (args.Index > 0 && !MoveToIndex(args.Index)) {
                 value = null;

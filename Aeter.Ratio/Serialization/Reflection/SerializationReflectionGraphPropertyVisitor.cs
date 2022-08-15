@@ -19,9 +19,7 @@ namespace Aeter.Ratio.Serialization.Reflection
         {
             if (!property.CanRead) return;
             if (!property.CanWrite) return;
-            if (property.GetGetMethod().IsStatic) return;
-
-            
+            if (property.GetMethod!.IsStatic) return;
         }
 
     }

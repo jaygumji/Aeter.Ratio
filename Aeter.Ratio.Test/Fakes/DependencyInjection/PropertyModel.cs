@@ -6,7 +6,7 @@ namespace Aeter.Ratio.Test.Fakes.DependencyInjection
     public class PropertyModel
     {
 
-        public AmDisposable Disp { get; set; }
+        public AmDisposable? Disp { get; set; }
 
     }
 }

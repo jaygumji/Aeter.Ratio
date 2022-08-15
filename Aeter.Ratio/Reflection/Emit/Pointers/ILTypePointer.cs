@@ -11,7 +11,7 @@ namespace Aeter.Ratio.Reflection.Emit
     {
 
         private static readonly MethodInfo MethodGetTypeFromHandleToken =
-            typeof(Type).GetTypeInfo().GetMethod("GetTypeFromHandle", new[] { typeof(RuntimeTypeHandle) });
+            typeof(Type).FindMethod("GetTypeFromHandle", typeof(RuntimeTypeHandle));
 
         private readonly Type _type;
         public override Type Type => typeof(Type);

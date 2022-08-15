@@ -39,15 +39,15 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
 
         public void Travel(IReadVisitor visitor, Category graph)
         {
-            String v0;
+            String? v0;
             if (visitor.TryVisitValue(_argsName0, out v0))
                 graph.Name = v0;
 
-            String v1;
+            String? v1;
             if (visitor.TryVisitValue(_argsDescription1, out v1))
                 graph.Description = v1;
 
-            byte[] v2;
+            byte[]? v2;
             if (visitor.TryVisitValue(_argsImage2, out v2))
                 graph.Image = v2;
         }

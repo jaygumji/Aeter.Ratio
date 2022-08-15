@@ -9,9 +9,7 @@ namespace Aeter.Ratio
     public sealed class DictionaryEqualityComparer<TDictionary, TKey, TValue> : IEqualityComparer<TDictionary>
         where TDictionary : IReadOnlyDictionary<TKey, TValue>
     {
-
-        public static readonly DictionaryEqualityComparer<TDictionary, TKey, TValue> Default
-            = new DictionaryEqualityComparer<TDictionary, TKey, TValue>();
+        public static readonly DictionaryEqualityComparer<TDictionary, TKey, TValue> Default = new();
 
         private readonly IEqualityComparer<TValue> _valueEqualityComparer;
 
@@ -25,7 +23,7 @@ namespace Aeter.Ratio
             _valueEqualityComparer = valueEqualityComparer;
         }
 
-        public bool Equals(TDictionary first, TDictionary second)
+        public bool Equals(TDictionary? first, TDictionary? second)
         {
             if (ReferenceEquals(first, second)) {
                 return true;

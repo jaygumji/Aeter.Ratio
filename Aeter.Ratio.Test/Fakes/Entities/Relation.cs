@@ -8,8 +8,8 @@ namespace Aeter.Ratio.Testing.Fakes.Entities
     public class Relation
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
         public int Value { get; set; }
 
         public override int GetHashCode()
@@ -18,7 +18,7 @@ namespace Aeter.Ratio.Testing.Fakes.Entities
                    (Description != null ? Description.GetHashCode() : 0) ^ Value.GetHashCode();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             var other = obj as Relation;
             if (other == null) return false;

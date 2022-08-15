@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Aeter.Ratio.Binary;
 
@@ -77,7 +78,7 @@ namespace Aeter.Ratio.Serialization.Json
             }
 
             if (parent.Node is JsonObject obj) {
-                if (obj.TryGet(name, out var field)) {
+                if (obj.TryGet(name!, out var field)) {
                     if (field is JsonObject || field is JsonArray) {
                         _parents.Push(new JsonReadLevel(field));
                     }
@@ -213,7 +214,7 @@ namespace Aeter.Ratio.Serialization.Json
             _parents.Pop();
         }
 
-        private bool TryVisitNumber<T>(VisitArgs args, Func<decimal?, T> converter, out T value)
+        private bool TryVisitNumber<T>(VisitArgs args, Func<decimal?, T> converter, out T? value)
         {
             var node = ParseUntilFound(args);
             if (node is JsonUndefined) {
@@ -237,18 +238,18 @@ namespace Aeter.Ratio.Serialization.Json
             return true;
         }
 
-        private bool TryVisitString<T>(VisitArgs args, Func<string, T> converter, out T value)
+        private bool TryVisitString<T>(VisitArgs args, Func<string, T> converter, out T? value)
         {
             var node = ParseUntilFound(args);
             if (node is JsonUndefined) {
-                value = default(T);
+                value = default;
                 return false;
             }
             if (node.IsNull) {
-                value = default(T);
+                value = default;
                 return true;
             }
-            if (!(node is JsonString s)) {
+            if (node is not JsonString s) {
                 throw UnexpectedJsonException.Type(args.Name, node, typeof(T));
             }
             value = converter.Invoke(s.Value);
@@ -335,7 +336,7 @@ namespace Aeter.Ratio.Serialization.Json
                     DateTimeStyles.RoundtripKind), out value);
         }
 
-        public bool TryVisitValue(VisitArgs args, out string value)
+        public bool TryVisitValue(VisitArgs args, out string? value)
         {
             return TryVisitString(args, s => s, out value);
         }
@@ -345,7 +346,7 @@ namespace Aeter.Ratio.Serialization.Json
             return TryVisitString(args, s => Guid.Parse(s), out value);
         }
 
-        public bool TryVisitValue(VisitArgs args, out byte[] value)
+        public bool TryVisitValue(VisitArgs args, out byte[]? value)
         {
             return TryVisitString(args, Convert.FromBase64String, out value);
         }

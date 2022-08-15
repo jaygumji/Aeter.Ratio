@@ -16,7 +16,7 @@ namespace Aeter.Ratio.Serialization.Json
 
         public override string ToString()
         {
-            return Value.HasValue ? Value.ToString() : "null";
+            return Value.HasValue ? Value.Value.ToString() : "null";
         }
     }
 }

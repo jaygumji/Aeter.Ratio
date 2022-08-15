@@ -5,8 +5,8 @@ namespace Aeter.Ratio.Test.Fakes.DependencyInjection
 {
     public class Command
     {
-        public ICommandInitializer Initializer { get; set; }
-        public ICommandEvents Events { get; set; }
+        public ICommandInitializer? Initializer { get; set; }
+        public ICommandEvents? Events { get; set; }
 
     }
 }

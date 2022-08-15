@@ -9,7 +9,12 @@ namespace Aeter.Ratio.Scheduling
     {
         private TimeSpan _timeOfDay;
 
-        public IDateConfiguration Date { get; set; }
+        public IDateConfiguration Date { get; }
+
+        public OncePerDayConfiguration(IDateConfiguration date)
+        {
+            Date = date;
+        }
 
         public TimeSpan TimeOfDay
         {

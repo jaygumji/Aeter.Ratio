@@ -29,7 +29,7 @@ namespace Aeter.Ratio.Serialization.Json
             return new UnexpectedJsonException("An array can not directly contain " + literal);
         }
 
-        public static UnexpectedJsonException Type(string name, IJsonNode node, Type expectedType)
+        public static UnexpectedJsonException Type(string? name, IJsonNode node, Type expectedType)
         {
             return new UnexpectedJsonException($"Unable to parse field {name}, expected {expectedType.Name}, but found {node.GetType().Name}");
         }

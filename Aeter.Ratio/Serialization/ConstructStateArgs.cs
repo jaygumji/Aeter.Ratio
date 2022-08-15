@@ -23,7 +23,7 @@ namespace Aeter.Ratio.Serialization
         /// <summary>
         /// A state bag that will be passed to the visitor when iterating the member
         /// </summary>
-        public object State { get; set; }
+        public object? State { get; set; }
 
         /// <summary>
         /// The level type which will be displayed in the visitor

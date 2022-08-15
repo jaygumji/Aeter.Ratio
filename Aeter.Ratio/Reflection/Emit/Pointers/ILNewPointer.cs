@@ -11,7 +11,7 @@ namespace Aeter.Ratio.Reflection.Emit.Pointers
     {
         private readonly ILPointer[] _constructorArguments;
         private readonly ConstructorInfo _constructor;
-        public override Type Type => _constructor.DeclaringType;
+        public override Type Type => _constructor.DeclaringType!;
 
         public ILNewPointer(ConstructorInfo constructor, params ILPointer[] constructorArguments)
         {

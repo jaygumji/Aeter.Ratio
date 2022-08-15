@@ -51,7 +51,7 @@ namespace Aeter.Ratio.Db.Serialization
             }
         }
 
-        object ITypedSerializer.Deserialize(Stream stream)
+        object? ITypedSerializer.Deserialize(Stream stream)
         {
             return Deserialize(stream);
         }

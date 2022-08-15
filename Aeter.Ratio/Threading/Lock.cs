@@ -30,6 +30,7 @@ namespace Aeter.Ratio.Threading
     }
 
     public class Lock<TKey> : ILock<TKey>
+        where TKey : notnull
     {
 
         private readonly ConcurrentDictionary<TKey, ILock> _locks;
@@ -56,8 +57,7 @@ namespace Aeter.Ratio.Threading
 
         public void Exit(TKey key)
         {
-            ILock keyLock;
-            if (_locks.TryGetValue(key, out keyLock))
+            if (_locks.TryGetValue(key, out var keyLock))
                 keyLock.Exit();
         }
     }

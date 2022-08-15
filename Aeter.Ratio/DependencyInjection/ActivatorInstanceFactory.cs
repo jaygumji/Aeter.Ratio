@@ -8,6 +8,7 @@ using System.Reflection;
 namespace Aeter.Ratio.DependencyInjection
 {
     public class ActivatorInstanceFactory<TInstance> : IInstanceFactory<TInstance>
+        where TInstance : notnull
     {
         private readonly ConstructorInfo _constructor;
         private readonly IInstanceFactory[] _factories;

@@ -22,26 +22,26 @@ namespace Aeter.Ratio.DependencyInjection
             _typeFactories = new Dictionary<Type, IInstanceFactory>();
         }
 
-        public IInstanceFactory GetFactory(Type type, bool throwError)
+        public IInstanceFactory? GetFactory(Type type, bool throwError)
         {
-            if (_typeFactories.TryGetValue(type, out IInstanceFactory factory)) {
+            if (_typeFactories.TryGetValue(type, out var factory)) {
                 return factory;
             }
 
-            if (_registrator.TryGet(type, out IDependencyInjectionRegistration registration)) {
+            if (_registrator.TryGet(type, out var registration)) {
                 if (registration.HasInstanceGetter) {
                     if (type == registration.Type) {
                         _typeFactories.Add(type, registration);
                         return registration;
                     }
-                    factory = (IInstanceFactory)Activator.CreateInstance(typeof(DelegatedInstanceProvider<>).MakeGenericType(type), registration);
+                    factory = (IInstanceFactory)Activator.CreateInstance(typeof(DelegatedInstanceProvider<>).MakeGenericType(type), registration)!;
                     _typeFactories.Add(type, factory);
                     return factory;
                 }
                 else if (type != registration.Type) {
                     factory = GetFactory(registration.Type, throwError);
                     if (factory != null) {
-                        factory = (IInstanceFactory)Activator.CreateInstance(typeof(DelegatedInstanceProvider<>).MakeGenericType(type), factory);
+                        factory = (IInstanceFactory)Activator.CreateInstance(typeof(DelegatedInstanceProvider<>).MakeGenericType(type), factory)!;
                         _typeFactories.Add(type, factory);
                     }
                     return factory;
@@ -96,7 +96,7 @@ namespace Aeter.Ratio.DependencyInjection
                 var paramIndex = parameters.Length + 1;
                 for (var i = 0; i < properties.Length; i++) {
                     var propertyType = properties[i].PropertyType;
-                    factoryParams[paramIndex + 1] = GetFactory(propertyType, throwError);
+                    factoryParams[paramIndex + 1] = GetFactory(propertyType, throwError)!;
                     factoryTypes[paramIndex++] = propertyType;
                 }
             }
@@ -163,7 +163,7 @@ namespace Aeter.Ratio.DependencyInjection
             return typeof(DynamicActivatorInstanceFactory<>).MakeGenericType(types[0]);
         }
 
-        public object GetInstance(Type type, bool throwError)
+        public object? GetInstance(Type type, bool throwError)
         {
             var factory = GetFactory(type, throwError);
             if (factory != null) return factory.GetInstance();

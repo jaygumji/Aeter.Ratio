@@ -15,7 +15,7 @@ namespace Aeter.Ratio.Db.Linq
             _connection = connection;
         }
 
-        public object Execute(Expression expression, bool isCollection)
+        public object? Execute(Expression expression, bool isCollection)
         {
             var stack = new EnigmaQueryStack();
 

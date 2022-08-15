@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Aeter.Ratio
 {
@@ -53,7 +54,7 @@ namespace Aeter.Ratio
         }
 
         /// <inheritdoc />
-        public bool TryGetValue(string name, out object value)
+        public bool TryGetValue(string name, [MaybeNullWhen(false)] out object value)
         {
             return _values.TryGetValue(name, out value);
         }
@@ -65,21 +66,21 @@ namespace Aeter.Ratio
         /// <param name="value">The value of the argument</param>
         public void Set<T>(T value)
         {
-            var name = typeof (T).FullName;
-            _values[name] = value;;
+            var name = typeof (T).FullName!;
+            _values[name] = value!;
         }
 
         /// <inheritdoc />
         public T Get<T>()
         {
-            var name = typeof(T).FullName;
+            var name = typeof(T).FullName!;
             return (T) Get(name);
         }
 
         /// <inheritdoc />
-        public bool TryGetValue<T>(out T value)
+        public bool TryGetValue<T>([MaybeNullWhen(false)] out T value)
         {
-            var name = typeof(T).FullName;
+            var name = typeof(T).FullName!;
 
             if (!_values.TryGetValue(name, out var untypedValue)) {
                 value = default;

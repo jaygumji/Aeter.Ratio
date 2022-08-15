@@ -25,8 +25,7 @@ namespace Aeter.Ratio.Serialization.Reflection
 
         public SerializableType GetOrCreate(Type type)
         {
-            SerializableType serializableType;
-            if (_types.TryGetValue(type, out serializableType))
+            if (_types.TryGetValue(type, out var serializableType))
                 return serializableType;
 
             serializableType = Build(type);

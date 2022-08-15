@@ -38,13 +38,13 @@ namespace Aeter.Ratio.Serialization
 
         public static EnigmaSerializationAttributes Empty { get; } = new EnigmaSerializationAttributes();
 
-        private EnigmaSerializationAttributes()
+        private EnigmaSerializationAttributes() : this(string.Empty)
         {
         }
 
-        public string Name { get; }
+        public string? Name { get; }
 
-        public EnigmaSerializationAttributes(string name)
+        public EnigmaSerializationAttributes(string? name)
         {
             Name = name;
         }

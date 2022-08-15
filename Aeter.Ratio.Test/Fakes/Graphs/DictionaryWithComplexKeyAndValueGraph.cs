@@ -9,7 +9,7 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
     public class DictionaryWithComplexKeyAndValueGraph
     {
 
-        public Dictionary<Identifier, Category> Value { get; set; }
+        public Dictionary<Identifier, Category>? Value { get; set; }
 
     }
 }

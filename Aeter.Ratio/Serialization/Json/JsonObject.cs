@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Aeter.Ratio.Serialization.Json
 {
@@ -29,7 +30,7 @@ namespace Aeter.Ratio.Serialization.Json
             return _fields.Remove(fieldName);
         }
 
-        public bool TryGet(string fieldName, out IJsonNode field)
+        public bool TryGet(string fieldName, [MaybeNullWhen(false)] out IJsonNode field)
         {
             return _fields.TryGetValue(fieldName, out field);
         }

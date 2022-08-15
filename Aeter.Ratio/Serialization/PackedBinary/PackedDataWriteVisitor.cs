@@ -25,7 +25,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             _reservations = new Stack<BinaryBufferReservation>();
         }
 
-        public void Visit(object level, VisitArgs args)
+        public void Visit(object? level, VisitArgs args)
         {
             if (args.Index > 0) {
                 BinaryZPacker.Pack(_writeBuffer, args.Index);
@@ -45,7 +45,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             _reservations.Push(_writer.Reserve());
         }
 
-        public void Leave(object level, VisitArgs args)
+        public void Leave(object? level, VisitArgs args)
         {
             if (args.IsRoot) {
                 return;
@@ -268,7 +268,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             BinaryPV64Packer.PackS(_writeBuffer.Buffer, offset, value.Value.Ticks, length);
         }
 
-        public void VisitValue(string value, VisitArgs args)
+        public void VisitValue(string? value, VisitArgs args)
         {
             if (args.Index > 0) {
                 BinaryZPacker.Pack(_writeBuffer, args.Index);
@@ -307,7 +307,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             _writeBuffer.Write(bytes, 0, bytes.Length);
         }
 
-        public void VisitValue(byte[] value, VisitArgs args)
+        public void VisitValue(byte[]? value, VisitArgs args)
         {
             if (args.Index > 0)
                 BinaryZPacker.Pack(_writeBuffer, args.Index);

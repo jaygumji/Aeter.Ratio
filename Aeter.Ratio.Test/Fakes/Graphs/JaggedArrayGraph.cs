@@ -5,6 +5,6 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
 {
     public class JaggedArrayGraph
     {
-        public int[][] Value { get; set; }
+        public int[][]? Value { get; set; }
     }
 }

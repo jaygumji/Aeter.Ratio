@@ -229,7 +229,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                 });
             }
             if (target.Ref.IsArray)
-                return new ILCallMethodSnippet(collectionMembers.ToArray, collectionLocal);
+                return new ILCallMethodSnippet(collectionMembers.ToArray!, collectionLocal);
 
             return collectionLocal;
         }
@@ -290,12 +290,12 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                 var loadTrueLabel = _il.NewLabel();
                 var checkIfErrorLabel = _il.NewLabel();
 
-                valueParam = _il.NewLocal(hasNullableMembers ? valueNullableMembers.NullableType : dictionaryMembers.ValueType);
+                valueParam = _il.NewLocal(hasNullableMembers ? valueNullableMembers!.NullableType : dictionaryMembers.ValueType);
                 _il.InvokeMethod(_visitorVariable, Members.VisitorTryVisitValue[dictionaryMembers.ValueType], Members.VisitArgsDictionaryValue, valueParam);
                 loadTrueLabel.TransferLongIfFalse();
 
                 if (hasNullableMembers) {
-                    _il.InvokeMethod(valueParam, valueNullableMembers.GetHasValue);
+                    _il.InvokeMethod(valueParam, valueNullableMembers!.GetHasValue);
                     _il.Negate();
                 }
                 else {
@@ -330,7 +330,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                 _il.AreEqual(callTryVisit, (int)ValueState.Found);
                 throwExceptionLabel.TransferLongIfFalse();
 
-                var valueLocal = _il.NewLocal(hasNullableMembers ? valueNullableMembers.NullableType : dictionaryMembers.ValueType);
+                var valueLocal = _il.NewLocal(hasNullableMembers ? valueNullableMembers!.NullableType : dictionaryMembers.ValueType);
                 GenerateCreateAndChildCallCode(valueLocal);
                 valueParam = valueLocal;
 
@@ -399,10 +399,10 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
         private void GenerateLoadParamValueCode(ILPointer param)
         {
-            var type = param.Type;
+            var type = param.Type!;
             var extType = _typeProvider.Extend(type);
-            if (extType.Classification == TypeClassification.Nullable)
-                type = extType.Container.AsNullable().ElementType;
+            if (extType.Container.AsNullable(out var nullable))
+                type = nullable.ElementType;
 
             if (extType.Info.IsValueType)
                 _il.InvokeMethod(param, Members.Nullable[type].GetValue);

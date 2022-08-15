@@ -12,9 +12,9 @@ namespace Aeter.Ratio.Binary
     {
         private readonly List<BinaryBufferReservation> _reservations;
 
-        private BinaryBufferReservation _firstReservation;
+        private BinaryBufferReservation? _firstReservation;
 
-        public BinaryWriteBuffer(IBinaryBufferPool pool, byte[] buffer, Stream stream)
+        public BinaryWriteBuffer(IBinaryBufferPool? pool, byte[] buffer, Stream stream)
             : base(pool, buffer, stream)
         {
             _reservations = new List<BinaryBufferReservation>();
@@ -51,12 +51,21 @@ namespace Aeter.Ratio.Binary
             Position = 0;
         }
 
-        public void Use(BinaryBufferReservation reservation)
+        public void ApplyUInt32Size(BinaryBufferReservation reservation)
         {
             Verify();
 
-            var value = (UInt32)(Position - reservation.Position);
+            var value = (uint)(Position - reservation.Position);
             var buffer = BinaryInformation.UInt32.Converter.Convert(value);
+            Use(reservation, buffer, 0, buffer.Length);
+        }
+
+        public void ApplyInt32Size(BinaryBufferReservation reservation)
+        {
+            Verify();
+
+            var value = Position - reservation.Position;
+            var buffer = BinaryInformation.Int32.Converter.Convert(value);
             Use(reservation, buffer, 0, buffer.Length);
         }
 

@@ -108,7 +108,7 @@ namespace Aeter.Ratio.Serialization.Json
             }
         }
 
-        private void WriteEscaped(string value)
+        private void WriteEscaped(string? value)
         {
             if (value == null) {
                 _writeBuffer.Write(_encoding.Null);
@@ -122,7 +122,7 @@ namespace Aeter.Ratio.Serialization.Json
             var index = 0;
             var position = 0;
             for (var i = 0; i < value.Length; i++) {
-                if (!_encoding.RequiresEscape(value[i], out byte[] charBytes)) {
+                if (!_encoding.RequiresEscape(value[i], out var charBytes)) {
                     continue;
                 }
                 if (position == 0) {
@@ -154,7 +154,7 @@ namespace Aeter.Ratio.Serialization.Json
             _writeBuffer.Write(_encoding.Quote);
         }
 
-        private void Visit(object level, VisitArgs args, byte[] beginToken)
+        private void Visit(object? level, VisitArgs args, byte[] beginToken)
         {
             if (!args.IsRoot) {
                 WriteFieldName(args);
@@ -163,7 +163,7 @@ namespace Aeter.Ratio.Serialization.Json
             _writeBuffer.Write(level == null ? _encoding.Null : beginToken);
         }
 
-        public void Visit(object level, VisitArgs args)
+        public void Visit(object? level, VisitArgs args)
         {
             if (!args.IsRoot && !args.Type.IsDictionaryValue()) {
                 EnsureComma();
@@ -193,7 +193,7 @@ namespace Aeter.Ratio.Serialization.Json
             _isFirsts.Push(true);
         }
 
-        public void Leave(object level, VisitArgs args)
+        public void Leave(object? level, VisitArgs args)
         {
             _isFirsts.Pop();
 
@@ -311,7 +311,7 @@ namespace Aeter.Ratio.Serialization.Json
             WriteValueSuffix(args);
         }
 
-        public void VisitValue(string value, VisitArgs args)
+        public void VisitValue(string? value, VisitArgs args)
         {
             WriteValuePrefix(args);
             WriteEscaped(value);
@@ -332,7 +332,7 @@ namespace Aeter.Ratio.Serialization.Json
             WriteValueSuffix(args);
         }
 
-        public void VisitValue(byte[] value, VisitArgs args)
+        public void VisitValue(byte[]? value, VisitArgs args)
         {
             if (args.Type == LevelType.DictionaryKey) {
                 throw new NotSupportedException("A blob is not supported as dictionary key.");

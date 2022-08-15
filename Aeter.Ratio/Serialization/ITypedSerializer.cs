@@ -9,13 +9,13 @@ namespace Aeter.Ratio.Serialization
     public interface ISerializer
     {
         void Serialize(Stream stream, object graph);
-        object Deserialize(Type type, Stream stream);
+        object? Deserialize(Type type, Stream stream);
     }
 
     public interface ITypedSerializer
     {
         void Serialize(Stream stream, object graph);
-        object Deserialize(Stream stream);
+        object? Deserialize(Stream stream);
     }
 
     public interface ITypedSerializer<T> : ITypedSerializer

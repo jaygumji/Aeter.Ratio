@@ -4,11 +4,14 @@
 using Aeter.Ratio.Scheduling;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Aeter.Ratio.Caching
 {
     public class MemoryCache<TKey, TValue> : ICache<TKey, TValue>, IDisposable
+        where TKey : notnull
+        where TValue : notnull
     {
         private static readonly TimeSpan Disabled = new TimeSpan(0, 0, 0, 0, -1);
 
@@ -19,7 +22,7 @@ namespace Aeter.Ratio.Caching
         private DateTime _nextTimerExecution;
         private readonly ReaderWriterLockSlim _rwLock;
 
-        public event EventHandler<ExpiredEventArgs<TKey, TValue>> Expired;
+        public event EventHandler<ExpiredEventArgs<TKey, TValue>>? Expired;
 
         public MemoryCache(ICachePolicy policy) : this(policy, EqualityComparer<TKey>.Default)
         {
@@ -35,7 +38,7 @@ namespace Aeter.Ratio.Caching
             _rwLock = new ReaderWriterLockSlim();
         }
 
-        private void CacheValidationCallback(object state)
+        private void CacheValidationCallback(object? state)
         {
             _rwLock.EnterWriteLock();
             try
@@ -132,42 +135,37 @@ namespace Aeter.Ratio.Caching
 
         object ICache.TrySet(object key, Func<object, object> contentGetter, ICachePolicy policy)
         {
-            if (key == null) throw new ArgumentNullException("key");
-            if (contentGetter == null) throw new ArgumentNullException("contentGetter");
-
-            if (!(key is TKey))
+            if (key is not TKey tkey)
                 throw new ArgumentException("The parameter key must be of type " + typeof(TKey).FullName);
 
-            return TrySet((TKey)key, k =>
-            {
+            return TrySet(tkey, k => {
                 var content = contentGetter(key);
-                if (content == null) throw new ArgumentException("The value getter delegate may not return null");
 
-                if (!(content is TValue))
+                if (content is not TValue value)
                     throw new ArgumentException("The value must be of type " + typeof(TValue).FullName);
 
-                return (TValue)content;
+                return value;
             });
         }
 
         object ICache.Get(object key)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) throw new ArgumentNullException(nameof(key));
 
-            if (!(key is TKey))
+            if (key is not TKey tkey)
                 throw new ArgumentException("The parameter key must be of type " + typeof(TKey).FullName);
 
-            return Get((TKey)key);
+            return Get(tkey);
         }
 
-        bool ICache.TryGet(object key, out object content)
+        bool ICache.TryGet(object key, [MaybeNullWhen(false)] out object content)
         {
-            if (key == null) throw new ArgumentNullException("key");
+            if (key == null) throw new ArgumentNullException(nameof(key));
 
-            if (!(key is TKey))
+            if (key is not TKey tkey)
                 throw new ArgumentException("The parameter key must be of type " + typeof(TKey).FullName);
 
-            var res = TryGet((TKey)key, out var typedContent);
+            var res = TryGet(tkey, out var typedContent);
 
             content = typedContent;
             return res;
@@ -255,14 +253,13 @@ namespace Aeter.Ratio.Caching
             }
         }
 
-        public bool TryGet(TKey key, out TValue content)
+        public bool TryGet(TKey key, [MaybeNullWhen(false)] out TValue content)
         {
             _rwLock.EnterReadLock();
             try
             {
-                if (!_contents.TryGetValue(key, out var cached))
-                {
-                    content = default(TValue);
+                if (!_contents.TryGetValue(key, out var cached)) {
+                    content = default;
                     return false;
                 }
                 cached.Touch();

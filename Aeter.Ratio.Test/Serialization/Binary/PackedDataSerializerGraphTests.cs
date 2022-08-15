@@ -108,7 +108,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.True(graph.Value.SequenceEqual(actual.Value));
+            Assert.True(graph.Value.SequenceEqual(actual.Value!));
         }
 
         [Fact]
@@ -124,7 +124,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(graph.Value.Id, actual.Value.Id);
+            Assert.Equal(graph.Value.Id, actual.Value!.Id);
             Assert.Equal(graph.Value.Name, actual.Value.Name);
             Assert.Equal(graph.Value.Description, actual.Value.Description);
             Assert.Equal(graph.Value.Value, actual.Value.Value);
@@ -137,9 +137,9 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
-            var firstActual = actual.Value.First();
+            var firstActual = actual.Value!.First();
             Assert.Equal(2, firstActual.Key);
             Assert.Equal("Test", firstActual.Value);
         }
@@ -163,7 +163,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(3, actual.Value.Count);
+            Assert.Equal(3, actual.Value!.Count);
 
             foreach (var kv in graph.Value) {
                 var actualValue = actual.Value[kv.Key];
@@ -184,7 +184,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(3, actual.Value.Count);
+            Assert.Equal(3, actual.Value!.Count);
 
             foreach (var kv in graph.Value) {
                 var actualValue = actual.Value[kv.Key];
@@ -205,7 +205,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(3, actual.Value.Count);
+            Assert.Equal(3, actual.Value!.Count);
 
             foreach (var kv in graph.Value) {
                 var actualValue = actual.Value[kv.Key];
@@ -224,12 +224,12 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
             var firstExpected = graph.Value.First();
-            var firstActual = actual.Value.First();
+            var firstActual = actual.Value!.First();
 
-            Assert.Equal(1, firstActual.Key.Count);
+            Assert.Single(firstActual.Key);
             var firstInnerExpected = firstExpected.Key.First();
             var firstInnerActual = firstActual.Key.First();
 
@@ -250,14 +250,14 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
             var firstExpected = graph.Value.First();
-            var firstActual = actual.Value.First();
+            var firstActual = actual.Value!.First();
 
             Assert.Equal(firstExpected.Key, firstActual.Key);
 
-            Assert.Equal(1, firstActual.Value.Count);
+            Assert.Single(firstActual.Value);
             var firstInnerExpected = firstExpected.Value.First();
             var firstInnerActual = firstActual.Value.First();
 
@@ -276,19 +276,19 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
-            var firstExpected = graph.Value.First();
-            var firstActual = actual.Value.First();
+            var firstExpected = graph.Value!.First();
+            var firstActual = actual.Value!.First();
 
-            Assert.Equal(1, firstActual.Key.Count);
+            Assert.Single(firstActual.Key);
             var firstInnerExpectedKey = firstExpected.Key.First();
             var firstInnerActualKey = firstActual.Key.First();
 
             Assert.Equal(firstInnerExpectedKey.Key, firstInnerActualKey.Key);
             Assert.Equal(firstInnerExpectedKey.Value, firstInnerActualKey.Value);
 
-            Assert.Equal(1, firstActual.Value.Count);
+            Assert.Single(firstActual.Value);
             var firstInnerExpectedValue = firstExpected.Value.First();
             var firstInnerActualValue = firstActual.Value.First();
 
@@ -307,12 +307,12 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
             var firstExpected = graph.Value.First();
-            var firstActual = actual.Value.First();
+            var firstActual = actual.Value!.First();
 
-            Assert.Equal(1, firstActual.Key.Count);
+            Assert.Single(firstActual.Key);
             var firstInnerExpectedKey = firstExpected.Key.First();
             var firstInnerActualKey = firstActual.Key.First();
 
@@ -332,14 +332,14 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
             var firstExpected = graph.Value.First();
-            var firstActual = actual.Value.First();
+            var firstActual = actual.Value!.First();
 
             Assert.Equal(firstExpected.Key, firstActual.Key);
 
-            Assert.Equal(1, firstActual.Value.Count);
+            Assert.Single(firstActual.Value);
             var firstInnerExpectedValue = firstExpected.Value.First();
             var firstInnerActualValue = firstActual.Value.First();
 
@@ -378,8 +378,8 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
-            Assert.Equal("Test", actual.Value.First());
+            Assert.Single(actual.Value);
+            Assert.Equal("Test", actual.Value!.First());
         }
 
         [Fact]
@@ -391,11 +391,11 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
             for (var i = 0; i < graph.Value.Count; i++) {
                 var expectedValue = graph.Value[i];
-                var actualValue = actual.Value[i];
+                var actualValue = actual.Value![i];
                 Assert.Equal(expectedValue, actualValue);
             }
         }
@@ -411,12 +411,12 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(1, actual.Value.Count);
+            Assert.Single(actual.Value);
 
             for (var i = 0; i < graph.Value.Count; i++) {
                 var expectedValue = graph.Value[i];
-                var actualValue = actual.Value[i];
-                Assert.Equal(1, actualValue.Count);
+                var actualValue = actual.Value![i];
+                Assert.Single(actualValue);
 
                 var firstExpected = expectedValue.First();
                 var firstActual = actualValue.First();
@@ -441,7 +441,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
 
             for (var i = 0; i < graph.Value.Count; i++) {
                 var expectedValue = graph.Value[i];
-                var actualValue = actual.Value[i];
+                var actualValue = actual.Value![i];
                 var firstActual = Assert.Single(actualValue);
                 var firstExpected = expectedValue.First();
 
@@ -458,7 +458,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(graph.Value.Length, actual.Value.Length);
+            Assert.Equal(graph.Value.Length, actual.Value!.Length);
 
             for (var r0 = 0; r0 < graph.Value.Length; r0++) {
                 var expectedInner = graph.Value[r0];
@@ -482,7 +482,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             var actual = _context.SerializeAndDeserialize(graph);
 
             Assert.NotNull(actual.Value);
-            Assert.Equal(6, actual.Value.Length);
+            Assert.Equal(6, actual.Value!.Length);
             Assert.Equal(2, actual.Value.GetLength(0));
             Assert.Equal(3, actual.Value.GetLength(1));
 

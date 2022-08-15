@@ -13,11 +13,12 @@ using Aeter.Ratio.Reflection.Emit.Pointers;
 namespace Aeter.Ratio.DependencyInjection
 {
     public class DynamicActivatorInstanceFactory<TInstance> : IInstanceFactory<TInstance>
+        where TInstance : notnull
     {
         private readonly DynamicActivator _activator;
         private readonly IEnumerable<IInstanceFactory> _conParamFactories;
-        private readonly Action<TInstance, object[]> _propertySetter;
-        private readonly IEnumerable<IInstanceFactory> _propParamFactories;
+        private readonly Action<TInstance, object[]>? _propertySetter;
+        private readonly IEnumerable<IInstanceFactory>? _propParamFactories;
 
         public DynamicActivatorInstanceFactory(ConstructorInfo constructor, PropertyInfo[] properties, ITypeProvider provider, IEnumerable<IInstanceFactory> parameterFactories)
         {
@@ -56,7 +57,7 @@ namespace Aeter.Ratio.DependencyInjection
 
             var methodName = string.Concat(
                 "D$PropertySetter$",
-                type.FullName.Replace(".", "_"),
+                type.FullName!.Replace(".", "_"),
                 "$",
                 Guid.NewGuid());
 
@@ -87,7 +88,7 @@ namespace Aeter.Ratio.DependencyInjection
                 .ToArray();
 
             var instance = (TInstance)_activator.Activate(conParams);
-            if (_propertySetter != null) {
+            if (_propertySetter != null && _propParamFactories != null) {
                 var propParams = _propParamFactories
                     .Select(f => f.GetInstance())
                     .ToArray();

@@ -10,7 +10,7 @@ namespace Aeter.Ratio.Binary
 
         public int Length { get; private set; }
 
-        public BinaryReadBuffer(IBinaryBufferPool poolHandle, byte[] buffer, Stream stream)
+        public BinaryReadBuffer(IBinaryBufferPool? poolHandle, byte[] buffer, Stream stream)
             : base(poolHandle, buffer, stream)
         {
             RefillBuffer();
@@ -88,6 +88,18 @@ namespace Aeter.Ratio.Binary
                 }
             }
             return Buffer[offsetPosition];
+        }
+
+        public void CopyTo(byte[] destArr)
+        {
+            CopyTo(destArr, 0, destArr.Length);
+        }
+        public void CopyTo(byte[] destArr, int destOffset, int length)
+        {
+            if (destArr.Length < length) throw new System.ArgumentException("Insufficient length of array", nameof(destArr));
+            RequestSpace(length);
+            System.Buffer.BlockCopy(Buffer, Position, destArr, destOffset, length);
+            Advance(length);
         }
 
         public void Advance(int length)

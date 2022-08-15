@@ -42,7 +42,7 @@ namespace Aeter.Ratio.Test.Reflection.Emit
             var mt = new DynamicMethod("Test$" + Guid.NewGuid(), typeof(string), Type.EmptyTypes);
             var il = mt.GetILGenerator();
             var instance = ILPointer.New(EmitTestClass.ConstructorInfo, "Hello World");
-            var property = ILPointer.Property(instance, typeof(IEmitTest).GetProperty("Message"));
+            var property = ILPointer.Property(instance, typeof(IEmitTest).GetProperty(nameof(IEmitTest.Message))!);
             il.Load(property);
             il.Emit(OpCodes.Ret);
             var m = (Func<string>)mt.CreateDelegate(typeof(Func<string>));
@@ -57,7 +57,7 @@ namespace Aeter.Ratio.Test.Reflection.Emit
             var il = mt.GetILGenerator();
             var list = ILPointer.Arg(0, typeof(List<string>));
 
-            var concatMethod = typeof(string).GetMethod("Concat", new[] {typeof(object), typeof(object)});
+            var concatMethod = typeof(string).GetMethod(nameof(string.Concat), new[] {typeof(object), typeof(object)})!;
             var res = il.NewLocal(typeof(string));
             il.Enumerate(list, cur => il.Set(res, ILSnippet.Call(concatMethod, res, cur)));
             il.Load(res);

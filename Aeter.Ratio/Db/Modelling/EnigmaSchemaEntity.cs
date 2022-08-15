@@ -8,11 +8,11 @@ namespace Aeter.Ratio.Db.Modelling
 
     public class EnigmaSchemaEntity
     {
-
         public EnigmaSchemaEntity()
         {
             Properties = new List<EnigmaSchemaEntityProperty>();
             Indexes = new List<EnigmaSchemaEntityIndex>();
+            Name = string.Empty;
         }
 
         public string Name { get; set; }

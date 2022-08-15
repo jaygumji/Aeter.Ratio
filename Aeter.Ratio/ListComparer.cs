@@ -23,7 +23,7 @@ namespace Aeter.Ratio
             _elementComparer = elementComparer;
         }
 
-        public int Compare(TList first, TList second)
+        public int Compare(TList? first, TList? second)
         {
             if (ReferenceEquals(first, second)) {
                 return 0;

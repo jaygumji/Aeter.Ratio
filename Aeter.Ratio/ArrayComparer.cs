@@ -7,7 +7,7 @@ namespace Aeter.Ratio
 {
     public sealed class ArrayComparer<T> : IComparer<T[]>
     {
-        public static readonly ArrayComparer<T> Default = new ArrayComparer<T>();
+        public static readonly ArrayComparer<T> Default = new();
 
         private readonly ListComparer<T[], T> _listComparer;
 
@@ -20,7 +20,7 @@ namespace Aeter.Ratio
             _listComparer = new ListComparer<T[], T>(elementComparer);
         }
 
-        public int Compare(T[] first, T[] second)
+        public int Compare(T[]? first, T[]? second)
         {
             return _listComparer.Compare(first, second);
         }

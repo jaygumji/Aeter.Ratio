@@ -7,6 +7,6 @@ namespace Aeter.Ratio.Testing.Fakes.Graphs
 {
     public class DictionaryWithCollectionKeyAndValueGraph
     {
-        public Dictionary<List<int>, List<string>> Value { get; set; }
+        public Dictionary<List<int>, List<string>>? Value { get; set; }
     }
 }

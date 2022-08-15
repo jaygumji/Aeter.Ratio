@@ -7,8 +7,20 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 {
     public class PendingChildGraphTraveller
     {
-        public FieldInfo Field { get; set; }
-        public MethodInfo TravelWriteMethod { get; set; }
-        public MethodInfo TravelReadMethod { get; set; }
+        public PendingChildGraphTraveller(FieldInfo fieldBuilder, DynamicTraveller dynamicTraveller)
+            : this(fieldBuilder, dynamicTraveller.TravelWriteMethod, dynamicTraveller.TravelReadMethod)
+        {
+        }
+
+        public PendingChildGraphTraveller(FieldInfo field, MethodInfo travelWriteMethod, MethodInfo travelReadMethod)
+        {
+            Field = field;
+            TravelWriteMethod = travelWriteMethod;
+            TravelReadMethod = travelReadMethod;
+        }
+
+        public FieldInfo Field { get; }
+        public MethodInfo TravelWriteMethod { get; }
+        public MethodInfo TravelReadMethod { get; }
     }
 }

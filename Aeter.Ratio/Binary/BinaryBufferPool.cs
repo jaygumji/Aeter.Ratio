@@ -20,7 +20,7 @@ namespace Aeter.Ratio.Binary
         private readonly SemaphoreSlim _sem = new SemaphoreSlim(1);
         private readonly SemaphoreSlim _semTimer = new SemaphoreSlim(1);
         private readonly DateTimeQueue<BufferLevel> _slidingQueue;
-        private Timer _timer;
+        private Timer? _timer;
         private DateTime _timerDueAt;
         private int _upperIndex;
         private readonly int _maxIndex;
@@ -142,7 +142,7 @@ namespace Aeter.Ratio.Binary
                 minSize += _size - rest;
             }
             var sizeIndex = GetIndexOf(minSize);
-            BufferLevel level = null;
+            BufferLevel? level = null;
 
             _sem.Wait();
             try
@@ -235,7 +235,7 @@ namespace Aeter.Ratio.Binary
             }
         }
 
-        private void TimerCallback_DiscardUnused(object state)
+        private void TimerCallback_DiscardUnused(object? state)
         {
             while (_slidingQueue.TryDequeue(out var levels))
             {

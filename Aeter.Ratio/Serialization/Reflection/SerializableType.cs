@@ -26,8 +26,7 @@ namespace Aeter.Ratio.Serialization.Reflection
 
         public SerializableProperty FindProperty(string propertyName)
         {
-            SerializableProperty ser;
-            if (!_properties.TryGetValue(propertyName, out ser))
+            if (!_properties.TryGetValue(propertyName, out var ser))
                 throw new ArgumentException("Property was not found, " + propertyName);
 
             return ser;
