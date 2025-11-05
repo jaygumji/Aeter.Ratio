@@ -13,7 +13,10 @@ namespace Aeter.Ratio.Binary
 
         protected Stream Stream { get; }
 
-        public byte[] Buffer { get; private set; }
+        private byte[] _buffer;
+        protected Memory<byte> BufferMemory { get; private set; }
+        protected Span<byte> BufferSpan => BufferMemory.Span;
+        public byte[] Buffer => _buffer;
         public int Position { get; protected set; }
         protected int Size { get; set; }
 
@@ -23,7 +26,8 @@ namespace Aeter.Ratio.Binary
             Stream = stream;
             _pool = pool;
             Position = 0;
-            Buffer = buffer;
+            _buffer = buffer;
+            BufferMemory = buffer;
         }
 
         protected void Expand(int length, int keepPosition, int keepLength)
@@ -35,10 +39,12 @@ namespace Aeter.Ratio.Binary
             if (_pool == null) throw new NotSupportedException("No pool has been specified, can not expand");
 
             var newBuffer = _pool.AcquireBuffer(newSize);
-            System.Buffer.BlockCopy(Buffer, keepPosition, newBuffer, 0, keepLength);
-            _pool.Release(Buffer);
+            var target = newBuffer.AsSpan(0, keepLength);
+            BufferSpan.Slice(keepPosition, keepLength).CopyTo(target);
+            _pool.Release(_buffer);
 
-            Buffer = newBuffer;
+            _buffer = newBuffer;
+            BufferMemory = newBuffer;
             Size = newBuffer.Length;
         }
 
@@ -56,9 +62,10 @@ namespace Aeter.Ratio.Binary
 
             OnDispose();
 
-            _pool?.Release(Buffer);
+            _pool?.Release(_buffer);
 
-            Buffer = Array.Empty<byte>();
+            _buffer = Array.Empty<byte>();
+            BufferMemory = Array.Empty<byte>();
             Position = -1;
             Size = 0;
         }

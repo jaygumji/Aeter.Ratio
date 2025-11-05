@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -13,8 +14,7 @@ namespace Aeter.Ratio.Test.Serialization.Bson
         [Fact]
         public void SerializeSmall()
         {
-            const int size = 51;
-            var expected = new byte[size];
+            var expected = Convert.FromBase64String("OAAAAAVpZAAQAAAABAZRHE8n9dBLr05Ft4bYjaoQbm8AAQAAAAJjYXRlZ29yeQAFAAAATWluaQAA");
             var block = SmallBlock.Filled();
             _context.AssertSerialize(expected, block);
         }

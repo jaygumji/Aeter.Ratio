@@ -14,7 +14,7 @@ namespace Aeter.Ratio.Test.Serialization.Bson
         public static SmallBlock Filled()
         {
             return new SmallBlock {
-                Id = Guid.NewGuid(),
+                Id = new Guid("4f1c5106-f527-4bd0-af4e-45b786d88daa"),
                 No = 1,
                 Category = "Mini"
             };

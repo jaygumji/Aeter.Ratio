@@ -40,15 +40,16 @@ namespace Aeter.Ratio.Serialization.Bson
             _states = states;
         }
 
-        private void WriteString(string? value, bool includeLength)
+        private void WriteString(string value, bool includeLength)
         {
-            if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
-                return;
-            }
-            _writeBuffer.WriteByte((byte)BsonTypeCode.String);
+            //if (value == null) {
+            //    _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
+            //    return;
+            //}
+            //_writeBuffer.WriteByte((byte)BsonTypeCode.String);
             _writeBuffer.RequestSpace(value.Length * 4 + 4);
-            var length = _encoding.BaseEncoding.GetBytes(value, 0, value.Length, _writeBuffer.Buffer, _writeBuffer.Position + 1) + 1;
+            var offset = includeLength ? _writeBuffer.Position + 4 : _writeBuffer.Position;
+            var length = _encoding.BaseEncoding.GetBytes(value, 0, value.Length, _writeBuffer.Buffer, offset) + 1;
             if (includeLength) {
                 var lengthBytes = BitConverter.GetBytes(length);
                 _writeBuffer.Write(lengthBytes);
@@ -58,12 +59,14 @@ namespace Aeter.Ratio.Serialization.Bson
 
         public void Visit(object? level, VisitArgs args)
         {
-            WriteValueHeader(args);
-            if (level == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
-                return;
-            }
             if (args.IsRoot) {
+                if (level == null) {
+                    _writeBuffer.WriteByte(0);
+                    _writeBuffer.WriteByte(0);
+                    _writeBuffer.WriteByte(0);
+                    _writeBuffer.WriteByte(0);
+                    return;
+                }
                 _states.Push(_writeBuffer.Reserve(4));
                 return;
             }
@@ -77,12 +80,16 @@ namespace Aeter.Ratio.Serialization.Bson
                 case LevelType.Collection:
                 case LevelType.CollectionInCollection:
                 case LevelType.CollectionInDictionaryValue:
-                    _states.Push(_writeBuffer.Reserve(4));
-                    _writeBuffer.WriteByte((byte)BsonTypeCode.Array);
+                    WritePropertyHeader(level, args, BsonTypeCode.Array);
+                    if (level != null) {
+                        _states.Push(_writeBuffer.Reserve(4));
+                    }
                     break;
                 default:
-                    _states.Push(_writeBuffer.Reserve(4));
-                    _writeBuffer.WriteByte((byte)BsonTypeCode.Document);
+                    WritePropertyHeader(level, args, BsonTypeCode.Document);
+                    if (level != null) {
+                        _states.Push(_writeBuffer.Reserve(4));
+                    }
                     break;
             }
         }
@@ -97,11 +104,22 @@ namespace Aeter.Ratio.Serialization.Bson
             _writeBuffer.WriteByte(0);
         }
 
-        private void WriteValueHeader(VisitArgs args)
+        private void WritePropertyType<T>(T? value, BsonTypeCode type)
+        {
+            if (value == null) {
+                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
+            }
+            else {
+                _writeBuffer.WriteByte((byte)type);
+            }
+        }
+
+        private void WritePropertyHeader<T>(T? value, VisitArgs args, BsonTypeCode type)
         {
             if (args.Name == null) return;
             switch (args.Type) {
                 case LevelType.CollectionItem:
+                    WritePropertyType(value, type);
                     WriteString(args.Index.ToString(), includeLength: false);
                     return;
                 case LevelType.DictionaryKey:
@@ -111,66 +129,61 @@ namespace Aeter.Ratio.Serialization.Bson
                     // The preceding DictionaryKey visit should have written the header
                     return;
             }
+            WritePropertyType(value, type);
             // Written as cstring
             WriteString(_fieldNameResolver.Resolve(args), includeLength: false);
         }
 
-        private void WriteValueDefault<T>(T? value, VisitArgs args, byte type, IBinaryInformation<T> info)
+        private void WriteValueDefault<T>(T? value, VisitArgs args, BsonTypeCode type, IBinaryInformation<T> info)
             where T : struct
         {
-            WriteValueHeader(args);
+            WritePropertyHeader(value, args, type);
             if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
+                return;
             }
-            else {
-                _writeBuffer.WriteByte(type);
-                _writeBuffer.Write(info.Converter.Convert(value));
-            }
+            _writeBuffer.Write(info.Converter.Convert(value));
         }
 
         public void VisitValue(byte? value, VisitArgs args)
         {
-            WriteValueHeader(args);
+            WritePropertyHeader(value, args, BsonTypeCode.Int32);
             if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
+                return;
             }
-            else {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Int32);
-                _writeBuffer.WriteByte(value.Value);
-                _writeBuffer.WriteByte(0);
-                _writeBuffer.WriteByte(0);
-                _writeBuffer.WriteByte(0);
-            }
+            _writeBuffer.WriteByte(value.Value);
+            _writeBuffer.WriteByte(0);
+            _writeBuffer.WriteByte(0);
+            _writeBuffer.WriteByte(0);
         }
 
         public void VisitValue(short? value, VisitArgs args)
         {
-            WriteValueDefault(value, args, (byte)BsonTypeCode.Int32, BinaryInformation.Int32);
+            WriteValueDefault(value, args, BsonTypeCode.Int32, BinaryInformation.Int32);
         }
 
         public void VisitValue(int? value, VisitArgs args)
         {
-            WriteValueDefault(value, args, (byte)BsonTypeCode.Int32, BinaryInformation.Int32);
+            WriteValueDefault(value, args, BsonTypeCode.Int32, BinaryInformation.Int32);
         }
 
         public void VisitValue(long? value, VisitArgs args)
         {
-            WriteValueDefault(value, args, (byte)BsonTypeCode.Int64, BinaryInformation.Int64);
+            WriteValueDefault(value, args, BsonTypeCode.Int64, BinaryInformation.Int64);
         }
 
         public void VisitValue(ushort? value, VisitArgs args)
         {
-            WriteValueDefault(value, args, (byte)BsonTypeCode.Int32, BinaryInformation.Int32);
+            WriteValueDefault(value, args, BsonTypeCode.Int32, BinaryInformation.Int32);
         }
 
         public void VisitValue(uint? value, VisitArgs args)
         {
-            WriteValueDefault((int?)value, args, (byte)BsonTypeCode.Int32, BinaryInformation.Int32);
+            WriteValueDefault((int?)value, args, BsonTypeCode.Int32, BinaryInformation.Int32);
         }
 
         public void VisitValue(ulong? value, VisitArgs args)
         {
-            WriteValueDefault((long?)value, args, (byte)BsonTypeCode.Int64, BinaryInformation.Int64);
+            WriteValueDefault((long?)value, args, BsonTypeCode.Int64, BinaryInformation.Int64);
         }
 
         public void VisitValue(bool? value, VisitArgs args)
@@ -179,88 +192,73 @@ namespace Aeter.Ratio.Serialization.Bson
                 throw new NotSupportedException("A boolean is not supported as dictionary key.");
             }
 
-            WriteValueHeader(args);
+            WritePropertyHeader(value, args, BsonTypeCode.Boolean);
             if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
+                return;
             }
-            else {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Boolean);
-                _writeBuffer.WriteByte(value.Value.ToBsonByte());
-            }
+            _writeBuffer.WriteByte(value.Value.ToBsonByte());
         }
 
         public void VisitValue(float? value, VisitArgs args)
         {
-            WriteValueDefault(value, args, (byte)BsonTypeCode.Double, BinaryInformation.Double);
+            WriteValueDefault(value, args, BsonTypeCode.Double, BinaryInformation.Double);
         }
 
         public void VisitValue(double? value, VisitArgs args)
         {
-            WriteValueDefault(value, args, (byte)BsonTypeCode.Double, BinaryInformation.Double);
+            WriteValueDefault(value, args, BsonTypeCode.Double, BinaryInformation.Double);
         }
 
         public void VisitValue(decimal? value, VisitArgs args)
         {
-            WriteValueDefault(value, args, (byte)BsonTypeCode.Decimal128, BinaryInformation.Decimal);
+            WriteValueDefault(value, args, BsonTypeCode.Decimal128, BinaryInformation.Decimal);
         }
 
         public void VisitValue(TimeSpan? value, VisitArgs args)
         {
-            WriteValueHeader(args);
-            if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
-            }
-            else {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.UInt64);
-                _writeBuffer.Write(BinaryInformation.UInt64.Converter.Convert((ulong)value.Value.Ticks));
-            }
+            WriteValueDefault((ulong?)value?.Ticks, args, BsonTypeCode.UInt64, BinaryInformation.UInt64);
         }
 
         public void VisitValue(DateTime? value, VisitArgs args)
         {
-            WriteValueHeader(args);
-            if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
-            }
-            else {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.UInt64);
-                _writeBuffer.Write(BinaryInformation.UInt64.Converter.Convert((ulong)value.Value.Ticks));
-            }
+            WriteValueDefault((ulong?)value?.Ticks, args, BsonTypeCode.UInt64, BinaryInformation.UInt64);
         }
 
         public void VisitValue(string? value, VisitArgs args)
         {
-            WriteValueHeader(args);
-            WriteString(value, includeLength: args.Type != LevelType.DictionaryKey);
+            WritePropertyHeader(value, args, BsonTypeCode.String);
+            if (value == null) {
+                return;
+            }
+            if (args.Type == LevelType.DictionaryKey) {
+                WriteString(value, includeLength: false);
+                return;
+            }
+            WriteString(value, includeLength: true);
         }
 
         public void VisitValue(Guid? value, VisitArgs args)
         {
+            WritePropertyHeader(value, args, BsonTypeCode.Binary);
             if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
-                WriteValueHeader(args);
+                return;
             }
-            else {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Binary);
-                WriteValueHeader(args);
-                _writeBuffer.Write(BinaryInformation.Int32.Converter.Convert(16));
-                _writeBuffer.WriteByte((byte)BsonBinarySubtypeCode.UUID);
-                _writeBuffer.Write(value.Value.ToByteArray());
-            }
+
+            _writeBuffer.Write(BinaryInformation.Int32.Converter.Convert(16));
+            _writeBuffer.WriteByte((byte)BsonBinarySubtypeCode.UUID);
+            _writeBuffer.Write(value.Value.ToByteArray());
         }
 
         public void VisitValue(byte[]? value, VisitArgs args)
         {
-            WriteValueHeader(args);
+            WritePropertyHeader(value, args, BsonTypeCode.Binary);
             if (value == null) {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
+                return;
             }
-            else {
-                _writeBuffer.WriteByte((byte)BsonTypeCode.Binary);
-                _writeBuffer.Write(BinaryInformation.Int32.Converter.Convert(value.Length));
-                _writeBuffer.WriteByte((byte)BsonBinarySubtypeCode.Generic);
-                _writeBuffer.Write(value);
-            }
+
+            _writeBuffer.Write(BinaryInformation.Int32.Converter.Convert(value.Length));
+            _writeBuffer.WriteByte((byte)BsonBinarySubtypeCode.Generic);
+            _writeBuffer.Write(value);
         }
     }
 }

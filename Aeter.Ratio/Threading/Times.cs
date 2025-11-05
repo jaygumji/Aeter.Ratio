@@ -7,7 +7,7 @@ namespace Aeter.Ratio.Threading
     public static class Times
     {
 
-        public static readonly TimeSpan Infinite = TimeSpan.FromSeconds(-1);
+        public static readonly TimeSpan Infinite = TimeSpan.FromMilliseconds(-1);
 
     }
 }

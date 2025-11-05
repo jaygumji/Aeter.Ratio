@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Aeter.Ratio.IO;
 using Aeter.Ratio.Threading;
 
@@ -24,7 +25,7 @@ namespace Aeter.Ratio.Binary
         private readonly long _start;
         private readonly long _maxLength;
         private readonly object _writeLock = new object();
-        private readonly ILock<long> _writeOffsetLock = new Lock<long>();
+        private readonly Lock<long> _writeOffsetLock = new Lock<long>();
 
         public BinaryStore(IStreamProvider provider)
             : this(provider, 0, 0)
@@ -89,17 +90,19 @@ namespace Aeter.Ratio.Binary
             _offsetWriteStream.Seek(-8, SeekOrigin.Current);
         }
 
-        public void Write(long storeOffset, byte[] data)
+        public async Task WriteAsync(long storeOffset, byte[] data)
         {
-            using (_writeOffsetLock.Enter(storeOffset))
-            {
-                using (var offsetWriteStream = _provider.AcquireWriteStream())
-                {
+            var handle = await _writeOffsetLock.EnterAsync(storeOffset);
+            try {
+                using (var offsetWriteStream = _provider.AcquireWriteStream()) {
                     offsetWriteStream.Seek(storeOffset, SeekOrigin.Begin);
                     offsetWriteStream.Write(data, 0, data.Length);
                     if (_lastFlushOffset > storeOffset)
                         _lastFlushOffset = storeOffset - 1;
                 }
+            }
+            finally {
+                await handle.ReleaseAsync();
             }
         }
 

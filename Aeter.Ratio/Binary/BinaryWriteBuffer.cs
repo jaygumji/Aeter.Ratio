@@ -76,7 +76,7 @@ namespace Aeter.Ratio.Binary
             if (buffer.Length > reservation.Size)
                 throw new ArgumentException("The supplied buffer can not exceed the reservation size");
 
-            System.Buffer.BlockCopy(buffer, offset, Buffer, reservation.Position, buffer.Length);
+            buffer.AsSpan(offset, buffer.Length).CopyTo(BufferSpan.Slice(reservation.Position, buffer.Length));
 
             if (_firstReservation == reservation) {
                 _reservations.RemoveAt(0);
@@ -103,9 +103,8 @@ namespace Aeter.Ratio.Binary
 
             var reservation = new BinaryBufferReservation(Position, size);
 
-            for (var i = 0; i < size; i++) {
-                Buffer[Position++] = 0;
-            }
+            BufferSpan.Slice(Position, size).Clear();
+            Position += size;
 
             _reservations.Add(reservation);
             if (_firstReservation == null)
@@ -121,7 +120,7 @@ namespace Aeter.Ratio.Binary
             if (Position >= Size)
                 throw new ArgumentException("Buffer is out of space.");
 
-            Buffer[Position++] = value;
+            BufferSpan[Position++] = value;
         }
 
         public void Write(byte[] buffer)
@@ -134,7 +133,7 @@ namespace Aeter.Ratio.Binary
             Verify();
 
             RequestSpace(length);
-            System.Buffer.BlockCopy(buffer, offset, Buffer, Position, length);
+            buffer.AsSpan(offset, length).CopyTo(BufferSpan.Slice(Position, length));
             Position += length;
         }
 

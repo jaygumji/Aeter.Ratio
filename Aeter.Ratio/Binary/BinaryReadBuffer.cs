@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using System;
 using System.IO;
 
 namespace Aeter.Ratio.Binary
@@ -33,7 +34,7 @@ namespace Aeter.Ratio.Binary
                     throw new EndOfStreamException();
                 }
             }
-            return Buffer[Position++];
+            return BufferSpan[Position++];
         }
 
         private void RefillBuffer()
@@ -41,12 +42,12 @@ namespace Aeter.Ratio.Binary
             var sizeLeft = Size - Position;
             var copyOffset = 0;
             if (Position != Length) {
-                System.Buffer.BlockCopy(Buffer, Position, Buffer, 0, sizeLeft);
+                BufferSpan.Slice(Position, sizeLeft).CopyTo(BufferSpan);
                 copyOffset = sizeLeft;
             }
             Position = 0;
 
-            Length = Size - sizeLeft
+            Length = sizeLeft
                      + Stream.Read(Buffer, copyOffset, Size - copyOffset);
         }
 
@@ -87,7 +88,7 @@ namespace Aeter.Ratio.Binary
                     throw new EndOfStreamException();
                 }
             }
-            return Buffer[offsetPosition];
+            return BufferSpan[offsetPosition];
         }
 
         public void CopyTo(byte[] destArr)
@@ -98,7 +99,7 @@ namespace Aeter.Ratio.Binary
         {
             if (destArr.Length < length) throw new System.ArgumentException("Insufficient length of array", nameof(destArr));
             RequestSpace(length);
-            System.Buffer.BlockCopy(Buffer, Position, destArr, destOffset, length);
+            BufferSpan.Slice(Position, length).CopyTo(destArr.AsSpan(destOffset, length));
             Advance(length);
         }
 
