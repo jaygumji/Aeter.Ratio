@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Threading
 {
-    public class Lock<T>
+    public class Lock<T> where T : notnull
     {
         private readonly SemaphoreSlim _locksSemaphore;
         private readonly Dictionary<T, LockEntry> _locks;
@@ -21,8 +21,8 @@ namespace Aeter.Ratio.Threading
             _locksSemaphore = new SemaphoreSlim(1);
         }
 
-        public async Task<LockHandle> EnterAsync(T value) => (await TryEnterAsync(value, Times.Infinite, CancellationToken.None))!;
-        public async Task<LockHandle> EnterAsync(T value, CancellationToken cancellationToken) => (await TryEnterAsync(value, Times.Infinite, cancellationToken))!;
+        public async Task<LockHandle> EnterAsync(T value) => (await TryEnterAsync(value, Timeout.InfiniteTimeSpan, CancellationToken.None))!;
+        public async Task<LockHandle> EnterAsync(T value, CancellationToken cancellationToken) => (await TryEnterAsync(value, Timeout.InfiniteTimeSpan, cancellationToken))!;
         public async Task<LockHandle?> TryEnterAsync(T value, TimeSpan timeout) => await TryEnterAsync(value, timeout, CancellationToken.None);
         public async Task<LockHandle?> TryEnterAsync(T value, TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -36,8 +36,8 @@ namespace Aeter.Ratio.Threading
             }
 
             if (entry is null) {
-                curTimeout = timeout == Times.Infinite ? timeout : timeout - sw.Elapsed;
-                if (timeout != Times.Infinite && curTimeout < TimeSpan.Zero) return null;
+                curTimeout = timeout == Timeout.InfiniteTimeSpan ? timeout : timeout - sw.Elapsed;
+                if (timeout != Timeout.InfiniteTimeSpan && curTimeout < TimeSpan.Zero) return null;
 
                 if (!await _locksSemaphore.WaitAsync(curTimeout, cancellationToken)) {
                     return null;
@@ -66,8 +66,8 @@ namespace Aeter.Ratio.Threading
                 }
             }
 
-            curTimeout = timeout == Times.Infinite ? timeout : timeout - sw.Elapsed;
-            if (timeout != Times.Infinite && curTimeout < TimeSpan.Zero) {
+            curTimeout = timeout == Timeout.InfiniteTimeSpan ? timeout : timeout - sw.Elapsed;
+            if (timeout != Timeout.InfiniteTimeSpan && curTimeout < TimeSpan.Zero) {
                 entry.Exit();
                 await DisposeEntryAsync(entry);
                 return null;

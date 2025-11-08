@@ -10,17 +10,17 @@ namespace Aeter.Ratio.Serialization.Bson
 {
     public class BsonSerializer : ISerializer
     {
-        private readonly IBinaryBufferPool _bufferPool;
+        private readonly BinaryBufferPool _bufferPool;
         private readonly SerializationEngine _engine;
 
         public IFieldNameResolver FieldNameResolver { get; set; }
         public BsonEncoding Encoding { get; set; }
 
-        public BsonSerializer() : this(BinaryBufferPool.Instance)
+        public BsonSerializer() : this(BinaryBufferPool.Default)
         {
         }
 
-        public BsonSerializer(IBinaryBufferPool bufferPool)
+        public BsonSerializer(BinaryBufferPool bufferPool)
         {
             _bufferPool = bufferPool;
             _engine = new SerializationEngine();
@@ -47,17 +47,17 @@ namespace Aeter.Ratio.Serialization.Bson
 
     public class BsonSerializer<T> : ITypedSerializer<T>
     {
-        private readonly IBinaryBufferPool _bufferPool;
+        private readonly BinaryBufferPool _bufferPool;
         private readonly SerializationEngine _engine;
 
         public IFieldNameResolver FieldNameResolver { get; set; }
         public BsonEncoding Encoding { get; set; }
 
-        public BsonSerializer() : this(new BinaryBufferFactory())
+        public BsonSerializer() : this(BinaryBufferPool.Default)
         {
         }
 
-        public BsonSerializer(IBinaryBufferPool bufferPool)
+        public BsonSerializer(BinaryBufferPool bufferPool)
         {
             _bufferPool = bufferPool;
             _engine = new SerializationEngine();

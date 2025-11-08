@@ -14,18 +14,18 @@ namespace Aeter.Ratio.Db.Serialization
     }
     public class ModelDataSerializer<T> : ITypedSerializer<T>
     {
-        private readonly IBinaryBufferPool _bufferPool;
+        private readonly BinaryBufferPool _bufferPool;
         private readonly SerializationEngine _engine;
 
-        public ModelDataSerializer() : this(new BinaryBufferFactory())
+        public ModelDataSerializer() : this(BinaryBufferPool.Default)
         {
         }
 
-        public ModelDataSerializer(IBinaryBufferPool bufferPool) : this(new DependencyInjectionContainer(), bufferPool)
+        public ModelDataSerializer(BinaryBufferPool bufferPool) : this(new DependencyInjectionContainer(), bufferPool)
         {
         }
 
-        public ModelDataSerializer(IInstanceFactory instanceFactory, IBinaryBufferPool bufferPool)
+        public ModelDataSerializer(IInstanceFactory instanceFactory, BinaryBufferPool bufferPool)
         {
             _bufferPool = bufferPool;
             _engine = new SerializationEngine(instanceFactory,

@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary
@@ -12,12 +13,12 @@ namespace Aeter.Ratio.Binary
 
         bool IsSpaceAvailable(long length);
 
-        Task WriteAsync(long storeOffset, byte[] data);
-        bool TryWrite(byte[] data, out long storeOffset);
+        Task WriteAsync(long storeOffset, byte[] data, CancellationToken cancellationToken);
+        Task<(bool IsSuccessful, long Offset)> TryWriteAsync(byte[] data, CancellationToken cancellationToken);
 
-        byte[] ReadAll(out long offset);
-        byte[] Read(long storeOffset, long length);
+        Task<(byte[] Data, long Offset)> ReadAllAsync(CancellationToken cancellationToken);
+        Task<byte[]> ReadAsync(long storeOffset, long length, CancellationToken cancellationToken);
 
-        void TruncateTo(byte[] data);
+        Task TruncateToAsync(byte[] data, CancellationToken cancellationToken);
     }
 }

@@ -1,8 +1,6 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#if DNX451
-
 using System;
 using System.IO;
 
@@ -38,8 +36,7 @@ namespace Aeter.Ratio.IO
 
         public void Return(IStream stream)
         {
-            var fileSystemStream = stream as PooledFileSystemStream;
-            if (fileSystemStream == null)
+            if (!(stream is PooledFileSystemStream fileSystemStream))
                 throw new ArgumentException("The stream parameter does not contain a stream handled by this provider");
 
             fileSystemStream.Stream.Dispose();
@@ -59,5 +56,3 @@ namespace Aeter.Ratio.IO
 
     }
 }
-
-#endif

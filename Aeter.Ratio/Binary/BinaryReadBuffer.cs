@@ -3,6 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary
 {
@@ -11,47 +13,48 @@ namespace Aeter.Ratio.Binary
 
         public int Length { get; private set; }
 
-        public BinaryReadBuffer(IBinaryBufferPool? poolHandle, byte[] buffer, Stream stream)
-            : base(poolHandle, buffer, stream)
+        public BinaryReadBuffer(BinaryBufferPool poolHandle, BinaryBufferPool.BinaryMemoryHandle handle, Stream stream)
+            : base(poolHandle, handle, stream)
         {
-            RefillBuffer();
         }
 
-        public BinaryReadBuffer(int size, Stream stream) : this(null, new byte[size], stream)
+        public BinaryReadBuffer(int size, Stream stream) : base(new byte[size], stream)
         {
         }
 
         public bool IsEndOfStream => Position == Length && Length < Size;
 
-        public byte ReadByte()
+        public async Task<byte> ReadByteAsync(CancellationToken cancellationToken = default)
         {
-            if (Position == Length) {
-                if (Length < Size) {
-                    throw new EndOfStreamException();
-                }
-                RefillBuffer();
-                if (Length == 0) {
-                    throw new EndOfStreamException();
-                }
-            }
-            return BufferSpan[Position++];
+            await RefillBufferAsync(cancellationToken: cancellationToken);
+            return Span[Position++];
         }
 
-        private void RefillBuffer()
+        private async Task RefillBufferAsync(bool force = false, CancellationToken cancellationToken = default)
         {
+            if (!force && Position != Length) {
+                return;
+            }
+            if (Length < Size) {
+                throw new EndOfStreamException();
+            }
+
             var sizeLeft = Size - Position;
             var copyOffset = 0;
             if (Position != Length) {
-                BufferSpan.Slice(Position, sizeLeft).CopyTo(BufferSpan);
+                Span.Slice(Position, sizeLeft).CopyTo(Span);
                 copyOffset = sizeLeft;
             }
             Position = 0;
 
-            Length = sizeLeft
-                     + Stream.Read(Buffer, copyOffset, Size - copyOffset);
+            Length = sizeLeft + await Stream.ReadAsync(Memory[copyOffset..Size], cancellationToken);
+
+            if (Length == 0) {
+                throw new EndOfStreamException();
+            }
         }
 
-        public void RequestSpace(int length)
+        public async Task RequestSpaceAsync(int length, CancellationToken cancellationToken = default)
         {
             if (Length - Position >= length) {
                 return;
@@ -63,57 +66,44 @@ namespace Aeter.Ratio.Binary
                 Expand(length, Position, sizeLeft);
                 Position = 0;
 
-                Length = sizeLeft
-                         + Stream.Read(Buffer, copyOffset, Size - copyOffset);
+                Length = sizeLeft + await Stream.ReadAsync(Memory[copyOffset..Size], cancellationToken);
             }
             else {
-                RefillBuffer();
+                await RefillBufferAsync(force: true, cancellationToken);
             }
         }
 
-        public byte PeekByte()
-        {
-            return PeekByte(0);
-        }
-
-        public byte PeekByte(int offset)
+        public Task<byte> PeekByteAsync(CancellationToken cancellationToken = default) => PeekByteAsync(0, cancellationToken);
+        public async Task<byte> PeekByteAsync(int offset, CancellationToken cancellationToken = default)
         {
             var offsetPosition = Position + offset;
             if (offsetPosition >= Length) {
                 if (Length < Size) {
                     throw new EndOfStreamException();
                 }
-                RefillBuffer();
+                await RefillBufferAsync(force: true, cancellationToken: cancellationToken);
                 if (offsetPosition >= Length) {
                     throw new EndOfStreamException();
                 }
             }
-            return BufferSpan[offsetPosition];
+            return Span[offsetPosition];
         }
 
-        public void CopyTo(byte[] destArr)
+        public Task CopyToAsync(byte[] destArr, CancellationToken cancellationToken = default)
         {
-            CopyTo(destArr, 0, destArr.Length);
+            return CopyToAsync(destArr, 0, destArr.Length, cancellationToken);
         }
-        public void CopyTo(byte[] destArr, int destOffset, int length)
+        public async Task CopyToAsync(byte[] destArr, int destOffset, int length, CancellationToken cancellationToken = default)
         {
             if (destArr.Length < length) throw new System.ArgumentException("Insufficient length of array", nameof(destArr));
-            RequestSpace(length);
-            BufferSpan.Slice(Position, length).CopyTo(destArr.AsSpan(destOffset, length));
-            Advance(length);
+            await RequestSpaceAsync(length, cancellationToken);
+            Span.Slice(Position, length).CopyTo(destArr.AsSpan(destOffset, length));
+            await AdvanceAsync(length, cancellationToken);
         }
 
-        public void Advance(int length)
+        public async Task AdvanceAsync(int length, CancellationToken cancellationToken = default)
         {
-            if (Position == Length) {
-                if (Length < Size) {
-                    throw new EndOfStreamException();
-                }
-                RefillBuffer();
-                if (Length == 0) {
-                    throw new EndOfStreamException();
-                }
-            }
+            await RefillBufferAsync(cancellationToken: cancellationToken);
             Position += length;
         }
 

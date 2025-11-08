@@ -101,7 +101,7 @@ namespace Aeter.Ratio.Test.Threading
             Assert.Equal(0, GetTrackedEntryCount(lck));
         }
 
-        private static int GetTrackedEntryCount<T>(Lock<T> lck)
+        private static int GetTrackedEntryCount<T>(Lock<T> lck) where T : notnull
         {
             var field = typeof(Lock<T>).GetField("_locks", BindingFlags.NonPublic | BindingFlags.Instance);
             var dictionary = field!.GetValue(lck)!;

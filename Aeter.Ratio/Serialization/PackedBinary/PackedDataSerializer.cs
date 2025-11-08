@@ -8,14 +8,14 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 {
     public class PackedDataSerializer<T> : ITypedSerializer<T>
     {
-        private readonly IBinaryBufferPool _bufferPool;
+        private readonly BinaryBufferPool _bufferPool;
         private readonly SerializationEngine _engine;
 
-        public PackedDataSerializer() : this(new BinaryBufferFactory())
+        public PackedDataSerializer() : this(BinaryBufferPool.Default)
         {
         }
 
-        public PackedDataSerializer(IBinaryBufferPool bufferPool)
+        public PackedDataSerializer(BinaryBufferPool bufferPool)
         {
             _bufferPool = bufferPool;
             _engine = new SerializationEngine();

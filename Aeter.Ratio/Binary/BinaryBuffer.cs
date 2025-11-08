@@ -8,26 +8,28 @@ namespace Aeter.Ratio.Binary
 {
     public class BinaryBuffer : IDisposable
     {
-        private readonly IBinaryBufferPool? _pool;
+        private readonly BinaryBufferPool _pool;
+        private BinaryBufferPool.BinaryMemoryHandle _handle;
         private bool _isDisposed;
 
         protected Stream Stream { get; }
-
-        private byte[] _buffer;
-        protected Memory<byte> BufferMemory { get; private set; }
-        protected Span<byte> BufferSpan => BufferMemory.Span;
-        public byte[] Buffer => _buffer;
+        protected Memory<byte> Memory => _handle.Memory;
+        protected Span<byte> Span => Memory.Span;
         public int Position { get; protected set; }
-        protected int Size { get; set; }
+        protected int Size => Memory.Length;
 
-        public BinaryBuffer(IBinaryBufferPool? pool, byte[] buffer, Stream stream)
+        public BinaryBuffer(Memory<byte> buffer, Stream stream)
         {
-            Size = buffer.Length;
+            Stream = stream;
+            Position = 0;
+            _pool = BinaryMemoryProvider.Single(buffer, out _handle);
+        }
+        public BinaryBuffer(BinaryBufferPool pool, BinaryBufferPool.BinaryMemoryHandle handle, Stream stream)
+        {
             Stream = stream;
             _pool = pool;
             Position = 0;
-            _buffer = buffer;
-            BufferMemory = buffer;
+            _handle = handle;
         }
 
         protected void Expand(int length, int keepPosition, int keepLength)
@@ -36,16 +38,14 @@ namespace Aeter.Ratio.Binary
 
             var newSize = Math.Max(length, Size * 2);
 
-            if (_pool == null) throw new NotSupportedException("No pool has been specified, can not expand");
+            if (_pool is null) throw new NotSupportedException("No pool has been specified, can not expand");
 
-            var newBuffer = _pool.AcquireBuffer(newSize);
-            var target = newBuffer.AsSpan(0, keepLength);
-            BufferSpan.Slice(keepPosition, keepLength).CopyTo(target);
-            _pool.Release(_buffer);
+            var newHandle = _pool.Acquire(newSize);
+            var target = newHandle.Memory.Span;
+            Span.Slice(keepPosition, keepLength).CopyTo(target);
 
-            _buffer = newBuffer;
-            BufferMemory = newBuffer;
-            Size = newBuffer.Length;
+            _handle.Dispose();
+            _handle = newHandle;
         }
 
         protected void Verify()
@@ -62,17 +62,13 @@ namespace Aeter.Ratio.Binary
 
             OnDispose();
 
-            _pool?.Release(_buffer);
-
-            _buffer = Array.Empty<byte>();
-            BufferMemory = Array.Empty<byte>();
+            _handle.Dispose();
+            _handle = BinaryBufferPool.InvalidHandle;
             Position = -1;
-            Size = 0;
         }
 
         protected virtual void OnDispose()
         {
         }
-
     }
 }

@@ -85,7 +85,7 @@ namespace Aeter.Ratio.Test.Threading
         [Fact]
         public void RunSync_NullAction_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => Invocation.RunSync((Func<Task>)null));
+            Assert.Throws<ArgumentNullException>(() => Invocation.RunSync((Func<Task>)null!));
         }
     }
 }

@@ -10,17 +10,17 @@ namespace Aeter.Ratio.Serialization.Json
 
     public class JsonSerializer : ISerializer
     {
-        private readonly IBinaryBufferPool _bufferPool;
+        private readonly BinaryBufferPool _bufferPool;
         private readonly SerializationEngine _engine;
 
         public IFieldNameResolver FieldNameResolver { get; set; }
         public JsonEncoding Encoding { get; set; }
 
-        public JsonSerializer() : this(BinaryBufferPool.Instance)
+        public JsonSerializer() : this(BinaryBufferPool.Default)
         {
         }
 
-        public JsonSerializer(IBinaryBufferPool bufferPool)
+        public JsonSerializer(BinaryBufferPool bufferPool)
         {
             FieldNameResolver = new CamelCaseFieldNameResolver();
             Encoding = JsonEncoding.UTF16LE;
@@ -47,17 +47,17 @@ namespace Aeter.Ratio.Serialization.Json
 
     public class JsonSerializer<T> : ITypedSerializer<T>
     {
-        private readonly IBinaryBufferPool _bufferPool;
+        private readonly BinaryBufferPool _bufferPool;
         private readonly SerializationEngine _engine;
 
         public IFieldNameResolver FieldNameResolver { get; set; }
         public JsonEncoding Encoding { get; set; }
 
-        public JsonSerializer() : this(new BinaryBufferFactory())
+        public JsonSerializer() : this(BinaryBufferPool.Default)
         {
         }
 
-        public JsonSerializer(IBinaryBufferPool bufferPool)
+        public JsonSerializer(BinaryBufferPool bufferPool)
         {
             _bufferPool = bufferPool;
             _engine = new SerializationEngine();

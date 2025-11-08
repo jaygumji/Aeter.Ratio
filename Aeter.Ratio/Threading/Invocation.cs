@@ -75,7 +75,7 @@ namespace Aeter.Ratio.Threading
 
         private static T RunSyncInternal<T>(Func<Task<T>> action)
         {
-            T result = default;
+            T result = default!;
             RunSyncInternal(async () => {
                 result = await action().ConfigureAwait(true);
             });

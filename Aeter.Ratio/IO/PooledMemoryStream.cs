@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Aeter.Ratio.IO
 {
@@ -31,6 +33,12 @@ namespace Aeter.Ratio.IO
             return _stream.Read(buffer, offset, count);
         }
 
+        public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var length = _stream.Read(buffer, offset, count);
+            return Task.FromResult(length);
+        }
+
         public void Dispose()
         {
             _provider.Return(this);
@@ -40,12 +48,20 @@ namespace Aeter.Ratio.IO
         {
             _stream.Write(buffer, offset, count);
         }
+        public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            _stream.Write(buffer, offset, count);
+            return Task.CompletedTask;
+        }
 
-        public void Flush()
+        public void Flush() => _stream.Flush();
+
+        public Task FlushAsync(CancellationToken cancellationToken)
         {
             _stream.Flush();
+            return Task.CompletedTask;
         }
-    
+
         public void FlushForced()
         {
             _stream.Flush();

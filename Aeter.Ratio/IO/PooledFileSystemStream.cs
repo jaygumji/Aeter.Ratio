@@ -1,9 +1,9 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#if DNX451
-
-using System.IO;    
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Aeter.Ratio.IO
 {
@@ -32,6 +32,11 @@ namespace Aeter.Ratio.IO
             return _stream.Read(buffer, offset, count);
         }
 
+        public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return _stream.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
         public void Dispose()
         {
             _provider.Return(this);
@@ -42,9 +47,19 @@ namespace Aeter.Ratio.IO
             _stream.Write(buffer, offset, count);
         }
 
+        public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return _stream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
         public void Flush()
         {
-            _stream.Flush();
+            _stream.FlushAsync();
+        }
+
+        public Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return _stream.FlushAsync(cancellationToken);
         }
 
         public void FlushForced()
@@ -54,5 +69,3 @@ namespace Aeter.Ratio.IO
 
     }
 }
-
-#endif

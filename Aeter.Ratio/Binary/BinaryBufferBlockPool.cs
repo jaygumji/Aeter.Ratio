@@ -3,18 +3,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Scheduling;
 using System;
-using System.IO;
 using System.Threading;
 
 namespace Aeter.Ratio.Binary
 {
-    public class BinaryBufferPool : IBinaryBufferPool, IDisposable
+    public class BinaryBufferBlockPool : BinaryBufferPool, IDisposable
     {
-        private static readonly Lazy<IBinaryBufferPool> LazySingleton
-            = new Lazy<IBinaryBufferPool>(() => new BinaryBufferPool(1024, TimeSpan.FromMinutes(20)));
-        public static IBinaryBufferPool Instance => LazySingleton.Value;
+        private static readonly Lazy<BinaryBufferBlockPool> LazySingleton
+            = new Lazy<BinaryBufferBlockPool>(() => new BinaryBufferBlockPool(1024, TimeSpan.FromMinutes(20)));
+        public static BinaryBufferBlockPool Instance => LazySingleton.Value;
 
-        private readonly int _size;
         private readonly TimeSpan _slidingExpiration;
         private readonly BufferLevel[] _bufferLevels;
         private readonly SemaphoreSlim _sem = new SemaphoreSlim(1);
@@ -50,30 +48,28 @@ namespace Aeter.Ratio.Binary
         /// Creates a new instance of <see cref="BinaryBufferPool"/>
         /// with size of new buffers set to 1024.
         /// </summary>
-        public BinaryBufferPool()
+        public BinaryBufferBlockPool()
             : this(1024, TimeSpan.Zero)
         {
         }
 
-        public BinaryBufferPool(int size)
+        public BinaryBufferBlockPool(int size)
             : this(size, TimeSpan.Zero)
         {
         }
 
-        public BinaryBufferPool(int size, TimeSpan slidingExpiration)
+        public BinaryBufferBlockPool(int size, TimeSpan slidingExpiration) : base(size)
         {
-            if (size < 1024)
-            {
+            if (size < 1024) {
                 throw new ArgumentException("Size may not be under 1024.");
             }
-            _size = size;
             _slidingExpiration = slidingExpiration;
             _bufferLevels = new BufferLevel[20];
             _bufferLevels[0] = new BufferLevel(size);
             _slidingQueue = new DateTimeQueue<BufferLevel>();
 
-            _maxIndex = (int)Math.Log(int.MaxValue / _size, 2);
-            _size1 = _size * 2;
+            _maxIndex = (int)Math.Log(int.MaxValue / MinSize, 2);
+            _size1 = MinSize * 2;
             _size2 = _size1 * 2;
             _size3 = _size2 * 2;
             _size4 = _size3 * 2;
@@ -97,7 +93,7 @@ namespace Aeter.Ratio.Binary
 
         private int GetIndexOf(int size)
         {
-            if (size == _size) return 0;
+            if (size == MinSize) return 0;
             if (size == _size1) return 1;
             if (size == _size2) return 2;
             if (size == _size3) return 3;
@@ -122,77 +118,61 @@ namespace Aeter.Ratio.Binary
             throw new ArgumentException("Invalid size " + size);
         }
 
-        public BinaryWriteBuffer AcquireWriteBuffer(Stream stream)
+        protected override BinaryMemoryHandle OnAcquire(int minSize)
         {
-            return new BinaryWriteBuffer(this, AcquireBuffer(_size), stream);
-        }
-
-        public BinaryReadBuffer AcquireReadBuffer(Stream stream)
-        {
-            return new BinaryReadBuffer(this, AcquireBuffer(_size), stream);
-        }
-
-        public byte[] AcquireBuffer(int minSize)
-        {
-            var rest = minSize % _size;
-            if (rest > 0)
-            {
+            var rest = minSize % MinSize;
+            if (rest > 0) {
                 // Makes all sized divisable by _size
                 // So that we have less buffer levels
-                minSize += _size - rest;
+                minSize += MinSize - rest;
             }
             var sizeIndex = GetIndexOf(minSize);
             BufferLevel? level = null;
+            byte[]? buffer;
 
             _sem.Wait();
-            try
-            {
-                for (var i = _upperIndex; i >= sizeIndex; i--)
-                {
+            try {
+                for (var i = _upperIndex; i >= sizeIndex; i--) {
                     level = _bufferLevels[i];
-                    if (i == sizeIndex)
-                    {
+                    if (i == sizeIndex) {
                         break;
                     }
                     if (level == null) continue;
 
-                    if (level.TryPop(out var buffer))
-                    {
-                        return buffer;
+                    if (level.TryPop(out buffer)) {
+                        return new Handle(this, buffer);
                     }
                 }
             }
-            finally
-            {
+            finally {
                 _sem.Release();
             }
-            return level == null
+            buffer = level == null
                 ? new byte[minSize]
                 : level.PopOrCreate();
+
+            return new Handle(this, buffer);
         }
 
-        public void Release(byte[] buffer)
+        protected override void OnRelease(BinaryMemoryHandle handle)
         {
+            var buffer = ((Handle)handle).Buffer;
             var size = buffer.Length;
             var sizeIndex = GetIndexOf(size);
 
             BufferLevel level;
             _sem.Wait();
-            try
-            {
+            try {
                 level = _bufferLevels[sizeIndex];
-                if (level == null)
-                {
+                if (level == null) {
                     level = new BufferLevel(size);
                     _bufferLevels[sizeIndex] = level;
-                    if (_upperIndex < sizeIndex)
-                    {
+                    if (_upperIndex < sizeIndex) {
                         _upperIndex = sizeIndex;
                     }
                 }
             }
-            finally
-            {
+            finally {
                 _sem.Release();
             }
             level.Release(buffer);
@@ -204,44 +184,35 @@ namespace Aeter.Ratio.Binary
         private void SetupTimer()
         {
             var now = DateTime.Now;
-            if (_timerDueAt > now)
-            {
+            if (_timerDueAt > now) {
                 return;
             }
             _semTimer.Wait();
-            try
-            {
-                if (_timerDueAt > now)
-                {
+            try {
+                if (_timerDueAt > now) {
                     return;
                 }
-                if (!_slidingQueue.TryPeekNextEntryAt(out _timerDueAt))
-                {
+                if (!_slidingQueue.TryPeekNextEntryAt(out _timerDueAt)) {
                     return;
                 }
                 var timeToNext = _timerDueAt.Subtract(now);
-                if (_timer == null)
-                {
+                if (_timer == null) {
                     _timer = new Timer(TimerCallback_DiscardUnused, null, timeToNext, Timeout.InfiniteTimeSpan);
                 }
-                else
-                {
+                else {
                     _timer.Change(timeToNext, Timeout.InfiniteTimeSpan);
                 }
             }
-            finally
-            {
+            finally {
                 _semTimer.Release();
             }
         }
 
         private void TimerCallback_DiscardUnused(object? state)
         {
-            while (_slidingQueue.TryDequeue(out var levels))
-            {
+            while (_slidingQueue.TryDequeue(out var levels)) {
                 var minTimeStamp = DateTime.Now.Subtract(_slidingExpiration);
-                foreach (var level in levels)
-                {
+                foreach (var level in levels) {
                     level.RemoveUnused(minTimeStamp);
                 }
             }
@@ -250,11 +221,21 @@ namespace Aeter.Ratio.Binary
 
         public void Dispose()
         {
-            if (_timer != null)
-            {
+            if (_timer != null) {
                 _timer.Dispose();
                 _timer = null;
             }
+        }
+
+        private class Handle : BinaryMemoryHandle
+        {
+            public Handle(BinaryBufferPool owner, byte[] buffer) : base(owner)
+            {
+                Buffer = buffer;
+            }
+
+            public byte[] Buffer { get; }
+            public override Memory<byte> Memory => Buffer;
         }
     }
 }

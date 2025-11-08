@@ -5,28 +5,29 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary
 {
     public class BinaryWriteBuffer : BinaryBuffer
     {
-        private readonly List<BinaryBufferReservation> _reservations;
+        private readonly List<BinaryBufferReservation> _reservations = new List<BinaryBufferReservation>();
 
         private BinaryBufferReservation? _firstReservation;
 
-        public BinaryWriteBuffer(IBinaryBufferPool? pool, byte[] buffer, Stream stream)
-            : base(pool, buffer, stream)
+        public BinaryWriteBuffer(BinaryBufferPool pool, BinaryBufferPool.BinaryMemoryHandle handle, Stream stream)
+            : base(pool, handle, stream)
         {
-            _reservations = new List<BinaryBufferReservation>();
         }
 
-        public BinaryWriteBuffer(int size, Stream stream) : this(null, new byte[size], stream)
+        public BinaryWriteBuffer(int size, Stream stream) : base(new byte[size], stream)
         {
         }
 
         private bool HasReservations => _firstReservation != null;
 
-        public void RequestSpace(int length)
+        public async Task RequestSpaceAsync(int length, CancellationToken cancellationToken = default)
         {
             Verify();
 
@@ -34,20 +35,20 @@ namespace Aeter.Ratio.Binary
                 return;
 
             if (_firstReservation == null && length <= Size) {
-                Flush();
+                await FlushAsync(cancellationToken);
                 return;
             }
 
             Expand(length, 0, Position);
         }
 
-        public void Flush()
+        public async Task FlushAsync(CancellationToken cancellationToken = default)
         {
             Verify();
 
             if (Position <= 0) return;
 
-            Stream.Write(Buffer, 0, Position);
+            await Stream.WriteAsync(Memory[..Position], cancellationToken);
             Position = 0;
         }
 
@@ -76,7 +77,7 @@ namespace Aeter.Ratio.Binary
             if (buffer.Length > reservation.Size)
                 throw new ArgumentException("The supplied buffer can not exceed the reservation size");
 
-            buffer.AsSpan(offset, buffer.Length).CopyTo(BufferSpan.Slice(reservation.Position, buffer.Length));
+            buffer.AsSpan(offset, buffer.Length).CopyTo(Span.Slice(reservation.Position, buffer.Length));
 
             if (_firstReservation == reservation) {
                 _reservations.RemoveAt(0);
@@ -87,23 +88,23 @@ namespace Aeter.Ratio.Binary
             _reservations.Remove(reservation);
         }
 
-        public BinaryBufferReservation Reserve(int size)
+        public async Task<BinaryBufferReservation> ReserveAsync(int size, CancellationToken cancellationToken = default)
         {
             Verify();
 
-            RequestSpace(size);
+            await RequestSpaceAsync(size, cancellationToken);
             if (!HasReservations) {
                 // If less than half of the buffer size is left
                 if (Size - Position < size/2) {
                     // Preemptive flush to ensure we have space to write
                     // the data the reservation is about
-                    Flush();
+                    await FlushAsync(cancellationToken);
                 }
             }
 
             var reservation = new BinaryBufferReservation(Position, size);
 
-            BufferSpan.Slice(Position, size).Clear();
+            Span.Slice(Position, size).Clear();
             Position += size;
 
             _reservations.Add(reservation);
@@ -113,35 +114,35 @@ namespace Aeter.Ratio.Binary
             return reservation;
         }
 
-        public void WriteByte(byte value)
+        public void WriteByteAsync(byte value)
         {
             Verify();
 
             if (Position >= Size)
                 throw new ArgumentException("Buffer is out of space.");
 
-            BufferSpan[Position++] = value;
+            Span[Position++] = value;
         }
 
-        public void Write(byte[] buffer)
+        public async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
         {
-            Write(buffer, 0, buffer.Length);
+            await WriteAsync(buffer, 0, buffer.Length, cancellationToken);
         }
 
-        public void Write(byte[] buffer, int offset, int length)
+        public async Task WriteAsync(byte[] buffer, int offset, int length, CancellationToken cancellationToken = default)
         {
             Verify();
 
-            RequestSpace(length);
-            buffer.AsSpan(offset, length).CopyTo(BufferSpan.Slice(Position, length));
+            await RequestSpaceAsync(length, cancellationToken);
+            buffer.AsSpan(offset, length).CopyTo(Span.Slice(Position, length));
             Position += length;
         }
 
-        public int Advance(int length)
+        public async Task<int> AdvanceAsync(int length, CancellationToken cancellationToken = default)
         {
             Verify();
 
-            RequestSpace(length);
+            await RequestSpaceAsync(length, cancellationToken);
             var position = Position;
             Position += length;
             return position;
@@ -151,7 +152,7 @@ namespace Aeter.Ratio.Binary
         {
             if (Position <= 0) return;
             // Flush unwritten data to stream
-            Stream.Write(Buffer, 0, Position);
+            Stream.Write(Memory[..Position].Span);
         }
 
     }
