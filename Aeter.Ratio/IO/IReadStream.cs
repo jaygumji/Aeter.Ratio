@@ -11,6 +11,6 @@ namespace Aeter.Ratio.IO
     {
         long Seek(long offset, SeekOrigin origin);
         int Read(byte[] buffer, int offset, int count);
-        Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken);
+        Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
     }
 }

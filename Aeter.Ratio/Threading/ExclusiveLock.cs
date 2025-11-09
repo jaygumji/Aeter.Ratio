@@ -70,7 +70,7 @@ namespace Aeter.Ratio.Threading
             return ValueTask.CompletedTask;
         }
 
-        private async Task<LockHandle?> TryEnterAsyncInternal(TimeSpan timeout, CancellationToken cancellationToken)
+        private async Task<LockHandle?> TryEnterAsyncInternal(TimeSpan timeout, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 

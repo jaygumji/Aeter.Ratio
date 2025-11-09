@@ -79,14 +79,14 @@ namespace Aeter.Ratio.Binary
             return _currentOffset + length <= _maxLength;
         }
 
-        private async Task UpdateOffsetAsync(CancellationToken cancellationToken)
+        private async Task UpdateOffsetAsync(CancellationToken cancellationToken = default)
         {
             var offsetBuffer = BitConverter.GetBytes(_currentOffset);
             await _offsetWriteStream.WriteAsync(offsetBuffer, 0, offsetBuffer.Length, cancellationToken);
             _offsetWriteStream.Seek(-8, SeekOrigin.Current);
         }
 
-        public async Task WriteAsync(long storeOffset, byte[] data, CancellationToken cancellationToken)
+        public async Task WriteAsync(long storeOffset, byte[] data, CancellationToken cancellationToken = default)
         {
             var handle = await _writeOffsetLock.EnterAsync(storeOffset, cancellationToken);
             try {
@@ -101,7 +101,7 @@ namespace Aeter.Ratio.Binary
             }
         }
 
-        public async Task<(bool IsSuccessful, long Offset)> TryWriteAsync(byte[] data, CancellationToken cancellationToken)
+        public async Task<(bool IsSuccessful, long Offset)> TryWriteAsync(byte[] data, CancellationToken cancellationToken = default)
         {
             await _writeSemaphore.WaitAsync(cancellationToken: cancellationToken);
             try {
@@ -121,7 +121,7 @@ namespace Aeter.Ratio.Binary
             }
         }
 
-        private async Task EnsureFlushedAsync(long offset, CancellationToken cancellationToken)
+        private async Task EnsureFlushedAsync(long offset, CancellationToken cancellationToken = default)
         {
             if (offset < _lastFlushOffset) return;
 
@@ -137,7 +137,7 @@ namespace Aeter.Ratio.Binary
             }
         }
 
-        public async Task<(byte[] Data, long Offset)> ReadAllAsync(CancellationToken cancellationToken)
+        public async Task<(byte[] Data, long Offset)> ReadAllAsync(CancellationToken cancellationToken = default)
         {
             await EnsureFlushedAsync(_currentOffset, cancellationToken);
 
@@ -151,7 +151,7 @@ namespace Aeter.Ratio.Binary
             return (buffer, 0);
         }
 
-        public async Task<byte[]> ReadAsync(long storeOffset, long length, CancellationToken cancellationToken)
+        public async Task<byte[]> ReadAsync(long storeOffset, long length, CancellationToken cancellationToken = default)
         {
             await EnsureFlushedAsync(storeOffset, cancellationToken);
 
@@ -163,7 +163,7 @@ namespace Aeter.Ratio.Binary
             return buffer;
         }
 
-        public async Task TruncateToAsync(byte[] data, CancellationToken cancellationToken)
+        public async Task TruncateToAsync(byte[] data, CancellationToken cancellationToken = default)
         {
             await _writeSemaphore.WaitAsync(cancellationToken: cancellationToken);
             try {

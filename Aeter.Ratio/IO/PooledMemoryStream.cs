@@ -33,7 +33,7 @@ namespace Aeter.Ratio.IO
             return _stream.Read(buffer, offset, count);
         }
 
-        public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             var length = _stream.Read(buffer, offset, count);
             return Task.FromResult(length);
@@ -48,7 +48,7 @@ namespace Aeter.Ratio.IO
         {
             _stream.Write(buffer, offset, count);
         }
-        public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             _stream.Write(buffer, offset, count);
             return Task.CompletedTask;
@@ -56,7 +56,7 @@ namespace Aeter.Ratio.IO
 
         public void Flush() => _stream.Flush();
 
-        public Task FlushAsync(CancellationToken cancellationToken)
+        public Task FlushAsync(CancellationToken cancellationToken = default)
         {
             _stream.Flush();
             return Task.CompletedTask;

@@ -13,12 +13,12 @@ namespace Aeter.Ratio.Binary
 
         bool IsSpaceAvailable(long length);
 
-        Task WriteAsync(long storeOffset, byte[] data, CancellationToken cancellationToken);
-        Task<(bool IsSuccessful, long Offset)> TryWriteAsync(byte[] data, CancellationToken cancellationToken);
+        Task WriteAsync(long storeOffset, byte[] data, CancellationToken cancellationToken = default);
+        Task<(bool IsSuccessful, long Offset)> TryWriteAsync(byte[] data, CancellationToken cancellationToken = default);
 
-        Task<(byte[] Data, long Offset)> ReadAllAsync(CancellationToken cancellationToken);
-        Task<byte[]> ReadAsync(long storeOffset, long length, CancellationToken cancellationToken);
+        Task<(byte[] Data, long Offset)> ReadAllAsync(CancellationToken cancellationToken = default);
+        Task<byte[]> ReadAsync(long storeOffset, long length, CancellationToken cancellationToken = default);
 
-        Task TruncateToAsync(byte[] data, CancellationToken cancellationToken);
+        Task TruncateToAsync(byte[] data, CancellationToken cancellationToken = default);
     }
 }

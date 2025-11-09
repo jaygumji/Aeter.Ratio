@@ -9,6 +9,6 @@ namespace Aeter.Ratio.IO
     public interface IWriteStream : IReadStream
     {
         void Write(byte[] buffer, int offset, int count);
-        Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken);
+        Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
     }
 }

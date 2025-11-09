@@ -21,10 +21,8 @@ namespace Aeter.Ratio.Threading
             _locksSemaphore = new SemaphoreSlim(1);
         }
 
-        public async Task<LockHandle> EnterAsync(T value) => (await TryEnterAsync(value, Timeout.InfiniteTimeSpan, CancellationToken.None))!;
-        public async Task<LockHandle> EnterAsync(T value, CancellationToken cancellationToken) => (await TryEnterAsync(value, Timeout.InfiniteTimeSpan, cancellationToken))!;
-        public async Task<LockHandle?> TryEnterAsync(T value, TimeSpan timeout) => await TryEnterAsync(value, timeout, CancellationToken.None);
-        public async Task<LockHandle?> TryEnterAsync(T value, TimeSpan timeout, CancellationToken cancellationToken)
+        public async Task<LockHandle> EnterAsync(T value, CancellationToken cancellationToken = default) => (await TryEnterAsync(value, Timeout.InfiniteTimeSpan, cancellationToken))!;
+        public async Task<LockHandle?> TryEnterAsync(T value, TimeSpan timeout, CancellationToken cancellationToken = default)
         {
             TimeSpan curTimeout;
             var sw = Stopwatch.StartNew();
@@ -151,7 +149,7 @@ namespace Aeter.Ratio.Threading
                 Interlocked.Decrement(ref count);
             }
 
-            public async Task<LockHandle?> WaitAndEnterAsync(Lock<T> owner, TimeSpan timeout, CancellationToken cancellationToken)
+            public async Task<LockHandle?> WaitAndEnterAsync(Lock<T> owner, TimeSpan timeout, CancellationToken cancellationToken = default)
             {
                 if (!await Semaphore.WaitAsync(timeout, cancellationToken)) {
                     return null;

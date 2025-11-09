@@ -12,7 +12,7 @@ namespace Aeter.Ratio.IO
         long Length { get; }
 
         void Flush();
-        Task FlushAsync(CancellationToken cancellationToken);
+        Task FlushAsync(CancellationToken cancellationToken = default);
         void FlushForced();
     }
 }
