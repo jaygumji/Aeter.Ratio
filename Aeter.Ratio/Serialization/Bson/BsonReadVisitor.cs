@@ -5,6 +5,7 @@ using Aeter.Ratio.Binary;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Xml.Linq;
 
 namespace Aeter.Ratio.Serialization.Bson
 {
@@ -20,9 +21,9 @@ namespace Aeter.Ratio.Serialization.Bson
         {
             public readonly IBsonNode Node;
             public readonly int Size;
-            public int Position;
+            public int Position = 4; // The 4 size bytes is included and already read
             public int Index;
-            public bool IsFullyParsed => Position >= Size;
+            public bool IsFullyParsed => Position + 1 >= Size; // Include the trailing zero in the check
 
             public BsonReadLevel(IBsonNode node)
             {
@@ -60,9 +61,11 @@ namespace Aeter.Ratio.Serialization.Bson
             }
 
             var parent = _parents.Peek();
-            if (parent.IsFullyParsed) return BsonUndefined.Instance;
 
             if (args.Type.IsDictionaryKey()) {
+                if (parent.IsFullyParsed) {
+                    return BsonUndefined.Instance;
+                }
                 if (!_reader.TryReadCString(out var key, out var binarySize)) {
                     throw UnexpectedBsonException.From("document key", _buffer, _encoding);
                 }
@@ -70,7 +73,13 @@ namespace Aeter.Ratio.Serialization.Bson
                 return new BsonString(key);
             }
             if (args.Type.IsDictionaryValue()) {
+                if (parent.IsFullyParsed) {
+                    return BsonUndefined.Instance;
+                }
                 var value = _reader.ReadValue(deep: false, out var binarySize);
+                if (value is BsonDocument || value is BsonArray) {
+                    _parents.Push(new BsonReadLevel(value));
+                }
                 parent.Position += binarySize;
                 return value;
             }
@@ -87,7 +96,11 @@ namespace Aeter.Ratio.Serialization.Bson
                     return BsonUndefined.Instance;
                 }
 
-                return _reader.ReadDocument(obj, ref parent.Position, name);
+                var node = _reader.ReadDocument(obj, ref parent.Position, name);
+                if (node is BsonDocument || node is BsonArray) {
+                    _parents.Push(new BsonReadLevel(node));
+                }
+                return node;
             }
             if (parent.Node is BsonArray arr) {
                 if (args.Type.IsCollectionItem()) {
@@ -97,7 +110,12 @@ namespace Aeter.Ratio.Serialization.Bson
                         }
                         return BsonUndefined.Instance;
                     }
-                    return _reader.ReadArray(arr, ref parent.Position, deep: false);
+                    var node = _reader.ReadArray(arr, ref parent.Position, deep: false);
+                    parent.Index++;
+                    if (node is BsonDocument || node is BsonArray) {
+                        _parents.Push(new BsonReadLevel(node));
+                    }
+                    return node;
                 }
                 throw UnexpectedBsonException.From(args.Type.ToString(), _buffer, _encoding);
             }
@@ -137,8 +155,10 @@ namespace Aeter.Ratio.Serialization.Bson
         {
             var node = _parents.Pop();
             if (!node.IsFullyParsed) {
-                _buffer.Advance(node.Size - node.Position);
+                _buffer.Advance(node.Size - node.Position - 1);
             }
+            var termination = _buffer.ReadByte();
+            if (termination != 0) throw UnexpectedBsonException.From("termination", _buffer, _encoding);
         }
 
         public bool TryVisitValue(VisitArgs args, out byte? value)
@@ -200,6 +220,10 @@ namespace Aeter.Ratio.Serialization.Bson
             }
             if (node.IsNull) {
                 value = null;
+                return true;
+            }
+            if (node is BsonString str && args.Type == LevelType.DictionaryKey) {
+                value = ValueConverter.ChangeType<int>(str.Value);
                 return true;
             }
 

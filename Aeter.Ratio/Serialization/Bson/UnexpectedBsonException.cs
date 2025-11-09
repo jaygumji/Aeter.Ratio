@@ -28,5 +28,10 @@ namespace Aeter.Ratio.Serialization.Bson
         {
             return new UnexpectedBsonException($"Unable to deserialize field {name}, value '{value}' would be truncated if converted to {targetType.Name}");
         }
+
+        public static UnexpectedBsonException Validation(string message)
+        {
+            return new UnexpectedBsonException(message);
+        }
     }
 }

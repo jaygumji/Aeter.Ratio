@@ -3,6 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary
 {
@@ -14,9 +16,21 @@ namespace Aeter.Ratio.Binary
 
         protected Stream Stream { get; }
         protected Memory<byte> Memory => _handle.Memory;
-        protected Span<byte> Span => Memory.Span;
+        public Span<byte> Span => Memory.Span;
         public int Position { get; protected set; }
         protected int Size => Memory.Length;
+
+        protected ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            => Stream.ReadAsync(destination, cancellationToken);
+
+        protected int Read(Memory<byte> destination)
+            => Stream.Read(destination.Span);
+
+        protected ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            => Stream.WriteAsync(source, cancellationToken);
+
+        protected void Write(ReadOnlyMemory<byte> source)
+            => Stream.Write(source.Span);
 
         public BinaryBuffer(Memory<byte> buffer, Stream stream)
         {

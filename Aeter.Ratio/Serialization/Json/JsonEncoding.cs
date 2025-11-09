@@ -156,9 +156,9 @@ namespace Aeter.Ratio.Serialization.Json
             return false;
         }
 
-        public int GetCharacterSize(byte[] buffer, int offset)
+        public int GetCharacterSize(Span<byte> buffer, int offset)
         {
-            if (offset + BinaryFormat.MinSize >= buffer.Length) {
+            if (offset + BinaryFormat.MinSize > buffer.Length) {
                 throw new IndexOutOfRangeException("The buffer does not contain the full character code.");
             }
 

@@ -70,7 +70,7 @@ namespace Aeter.Ratio.Binary
         /// <param name="offset">The offset.</param>
         /// <param name="value">The value to pack</param>
         /// <param name="length">The length to pack</param>
-        public static void PackU(byte[] buffer, int offset, UInt64 value, byte length)
+        public static void PackU(Span<byte> buffer, int offset, UInt64 value, byte length)
         {
             var b = (byte)(value << 56 >> 56);
             buffer[offset] = b;
@@ -171,7 +171,7 @@ namespace Aeter.Ratio.Binary
         /// <param name="offset">The offset.</param>
         /// <param name="value">The value to pack</param>
         /// <param name="length">The length to pack</param>
-        public static void PackS(byte[] buffer, int offset, Int64 value, byte length)
+        public static void PackS(Span<byte> buffer, int offset, Int64 value, byte length)
         {
             var isNegative = value < 0;
             var signBit = (byte)(isNegative ? 1 : 0);
@@ -269,6 +269,6 @@ namespace Aeter.Ratio.Binary
 
             return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
         }
-    
+
     }
 }

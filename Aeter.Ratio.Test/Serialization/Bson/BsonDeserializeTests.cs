@@ -8,12 +8,62 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Aeter.Ratio.Test.Serialization.Bson
 {
     public class BsonDeserializeTests
     {
-        private readonly BsonSerializationTestContext _context = new BsonSerializationTestContext();
+        private readonly BsonSerializationTestContext _context;
+
+        public BsonDeserializeTests(ITestOutputHelper output)
+        {
+            _context = new BsonSerializationTestContext(output);
+        }
+
+        [Fact]
+        public void DeserializeSmall()
+        {
+            var expected = SmallBlock.Filled();
+
+            var bson = Convert.FromBase64String("OQAAAAVpZAAQAAAABAZRHE8n9dBLr05Ft4bYjaoQbm8AAQAAAAJjYXRlZ29yeQAFAAAATWluaQAA");
+            _context.AssertDeserialize(bson, expected, (l, r) => {
+                if (l is null && r is null) return 0;
+                if (l is null || r is null) return -1;
+                var i = l.Id.CompareTo(r.Id);
+                if (i != 0) return i;
+                i = StringComparer.Ordinal.Compare(l.Category, r.Category);
+                if (i != 0) return i;
+                i = l.No.CompareTo(r.No);
+                return i;
+            });
+        }
+
+        [Fact]
+        public void DeserializeLarge()
+        {
+            var expected = BsonDataBlock.Filled();
+            var bson = Convert.FromBase64String("jgMAAAVpZAAQAAAABEKRFfWjufpFha7gyeYJkKkCc3RyaW5nAAwAAABIZWxsbyBXb3JsZAAQaW50MTYACk8AABBpbnQzMgBel5gCEmludDY0AHGywJhz7V08EHVJbnQxNgBC+wAAEnVJbnQzMgD21+nNAAAAABJ1SW50NjQAOeny0Z3Irg0Bc2luZ2xlAAAAAMDMDEBAAWRvdWJsZQC4HoXrUQWxQBF0aW1lU3BhbgBAyEACAAAAABNkZWNpbWFsAJTlqgIAAAAAAAAAAAAAAwARZGF0ZVRpbWUAAC27HEUBAAAQYnl0ZQAqAAAACGJvb2xlYW4AAQVibG9iAAMAAAAAAQIDBG1lc3NhZ2VzAEYAAAACMAAGAAAAVGVzdDEAAjAABgAAAFRlc3QyAAIwAAYAAABUZXN0MwACMAAGAAAAVGVzdDQAAjAABgAAAFRlc3Q1AAAEc3RhbXBzABAAAAARMAAAK74bJwEAAAADcmVsYXRpb24AdAAAAAVpZAAQAAAABNT3jvZib2tHvF5xrYZUmmMCbmFtZQALAAAAQ29ubmVjdGlvbgACZGVzY3JpcHRpb24AJQAAAEdlbmVyaWMgY29ubmVjdGlvbiBiZXR3ZWVuIHJlbGF0aW9ucwAQdmFsdWUATQAAAAAKZHVtbXlSZWxhdGlvbgAEc2Vjb25kYXJ5UmVsYXRpb25zAGgAAAADMABgAAAABWlkABAAAAAEFrbtyewmu0SecD84x8GMkQJuYW1lAAYAAABMaW5lMQACZGVzY3JpcHRpb24AFgAAAEZpcnN0IGxpbmUgb2YgY2FzY2FkZQAQdmFsdWUAuwAAAAAAA2luZGV4ZWRWYWx1ZXMAJQAAAFYxABABAAAAVjIAEAIAAABWMwAQAwAAAFY0ABAEAAAAAANjYXRlZ29yaWVzANcAAAAxAANOAAAAAm5hbWUACAAAAFdhcm5pbmcAAmRlc2NyaXB0aW9uABUAAABXYXJuaW5nIG9mIHNvbWV0aGluZwAFaW1hZ2UABQAAAAABAgMEBQAyAANOAAAAAm5hbWUABgAAAEVycm9yAAJkZXNjcmlwdGlvbgATAAAARXJyb3Igb2Ygc29tZXRoaW5nAAVpbWFnZQAJAAAAAAECAwQFBgcICQAzAAMtAAAAAm5hbWUACgAAAFRlbXBvcmFyeQAKZGVzY3JpcHRpb24ACmltYWdlAAAAAA==");
+            _context.AssertDeserialize(bson, expected, (l, r) => {
+                if (l is null && r is null) return 0;
+                if (l is null || r is null) return -1;
+                l.AssertEqualTo(r);
+                return 0;
+            });
+        }
+
+        [Fact]
+        public void DeserializeRootDictionary()
+        {
+            var expected = new Dictionary<int, string> {
+                {1, "Hello"},
+                {2, "big"},
+                {3, "world"}
+            };
+
+            var bson = Convert.FromBase64String("KgAAADEAAgYAAABIZWxsbwAyAAIEAAAAYmlnADMAAgYAAAB3b3JsZAAA");
+            _context.AssertDeserialize(bson, expected, (l, r) => new DictionaryComparer<Dictionary<int, string>, int, string>().Compare(l, r));
+        }
 
         //[Fact]
         //public void DeserializeBool()

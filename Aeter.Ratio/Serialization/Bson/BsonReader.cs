@@ -34,7 +34,7 @@ namespace Aeter.Ratio.Serialization.Bson
         public int ReadInt32()
         {
             _buffer.RequestSpace(4);
-            var value = BinaryInformation.Int32.Converter.Convert(_buffer.Buffer, _buffer.Position);
+            var value = BinaryInformation.Int32.Converter.Convert(_buffer.Span, _buffer.Position);
             _buffer.Advance(4);
             return value;
         }
@@ -47,11 +47,17 @@ namespace Aeter.Ratio.Serialization.Bson
 
         private bool TryReadCString(int offset, int space, [MaybeNullWhen(false)] out string value, [MaybeNullWhen(false)] out int size)
         {
+            if (_buffer.PeekByte(offset) == BsonEncoding.ZeroTermination) {
+                size = 1;
+                value = "";
+                _buffer.Advance(size);
+                return true;
+            }
             _buffer.RequestSpace(space);
             for (var i = _buffer.Position + offset; i < _buffer.Length; i++) {
-                if (_buffer.Buffer[i] == BsonEncoding.ZeroTermination) {
+                if (_buffer.Span[i] == BsonEncoding.ZeroTermination) {
                     size = i - _buffer.Position + 1;
-                    value = _encoding.BaseEncoding.GetString(_buffer.Buffer, _buffer.Position, size - 1);
+                    value = _encoding.BaseEncoding.GetString(_buffer.Span.Slice(_buffer.Position, size - 1));
                     _buffer.Advance(size);
                     return true;
                 }
@@ -79,7 +85,7 @@ namespace Aeter.Ratio.Serialization.Bson
         public string ReadLString(int size)
         {
             _buffer.RequestSpace(size);
-            var value = _encoding.BaseEncoding.GetString(_buffer.Buffer, _buffer.Position, size-1);
+            var value = _encoding.BaseEncoding.GetString(_buffer.Span.Slice(_buffer.Position, size - 1));
             _buffer.Advance(size);
             return value;
         }
@@ -87,8 +93,9 @@ namespace Aeter.Ratio.Serialization.Bson
         private IBsonNode ReadFixedValue<T>(IBinaryInformation<T> info, Func<T, IBsonNode> factory, out int binarySize)
         {
             _buffer.RequestSpace(info.FixedLength);
-            var raw = info.Converter.Convert(_buffer.Buffer, _buffer.Position);
+            var raw = info.Converter.Convert(_buffer.Span, _buffer.Position);
             binarySize = info.FixedLength;
+            _buffer.Advance(binarySize);
             return factory(raw);
         }
 
@@ -154,7 +161,7 @@ namespace Aeter.Ratio.Serialization.Bson
                 case BsonTypeCode.DateTime:
                     binarySize = 8;
                     _buffer.RequestSpace(binarySize);
-                    var ms = BinaryInformation.Int64.Converter.Convert(_buffer.Buffer, _buffer.Position);
+                    var ms = BinaryInformation.Int64.Converter.Convert(_buffer.Span, _buffer.Position);
                     _buffer.Advance(binarySize);
                     var dt = DateTime.UnixEpoch.AddMilliseconds(ms);
                     return new BsonDateTime(dt);
@@ -203,10 +210,12 @@ namespace Aeter.Ratio.Serialization.Bson
         {
             var size = array.Size;
             while (parsedSize < size) {
+                var type = ReadType();
+                parsedSize++;
                 if (!TryReadCString(out var fieldName, out var fieldNameSize)) throw UnexpectedBsonException.From("field name", _buffer, _encoding);
                 parsedSize += fieldNameSize;
 
-                var value = ReadValue(deep: deep, out var parsedValueSize);
+                var value = ReadValue(type, deep: deep, out var parsedValueSize);
                 parsedSize += parsedValueSize;
                 array.Add(value);
                 if (!deep) {
@@ -220,10 +229,12 @@ namespace Aeter.Ratio.Serialization.Bson
         {
             var size = document.Size;
             while (parsedSize < size) {
+                var type = ReadType();
+                parsedSize++;
                 if (!TryReadCString(out var fieldName, out var fieldNameSize)) throw UnexpectedBsonException.From("field name", _buffer, _encoding);
                 parsedSize += fieldNameSize;
                 var isMatchedName = string.Equals(fieldName, nameToFind, StringComparison.Ordinal);
-                var value = ReadValue(deep: !isMatchedName, out var parsedValueSize);
+                var value = ReadValue(type, deep: !isMatchedName, out var parsedValueSize);
                 parsedSize += parsedValueSize;
                 document.Add(fieldName, value);
 

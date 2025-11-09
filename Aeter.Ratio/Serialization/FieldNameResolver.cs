@@ -10,6 +10,7 @@ namespace Aeter.Ratio.Serialization
         public string Resolve(VisitArgs args)
         {
             if (!string.IsNullOrEmpty(args.Attributes.Name)) {
+
                 return args.Attributes.Name;
             }
             return OnResolve(args);

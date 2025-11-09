@@ -36,11 +36,28 @@ namespace Aeter.Ratio.Binary.Converters
                 return;
             }
 
-            var targetLength = target.Length;
-
             if (sourceOffset < 0 || sourceOffset >= source.Length) {
                 throw new ArgumentException("The source offset is not within the bounds of the array.");
             }
+            if (sourceCount < 0 || sourceOffset + sourceCount > source.Length) {
+                throw new ArgumentException("The source count is not within the bounds of the array.");
+            }
+            if (targetOffset < 0 || targetOffset > target.Length) {
+                throw new ArgumentException("The target offset is not within the bounds of the array.");
+            }
+
+            var sourceSpan = source.AsSpan(sourceOffset, sourceCount);
+            var targetSpan = target.AsSpan(targetOffset);
+            Encode(sourceSpan, targetSpan);
+        }
+
+        public void Encode(ReadOnlySpan<byte> source, Span<byte> target)
+        {
+            if (source.Length == 0) {
+                return;
+            }
+
+            var sourceCount = source.Length;
 
             var padding = sourceCount % 3;
 
@@ -50,97 +67,90 @@ namespace Aeter.Ratio.Binary.Converters
             var blockCount = (sourceCount - 1) / 3 + 1;
             var numberOfChars = blockCount * 4;
 
-            if (numberOfChars * _charSize > targetLength - targetOffset) {
-                throw new ArgumentException("The base64 encoding does not fit into the target array.");
+            if (numberOfChars * _charSize > target.Length) {
+                throw new ArgumentException("The base64 encoding does not fit into the target span.");
             }
 
-            unsafe {
-                fixed (byte* startOfSource = source) {
-                    fixed (byte* startOfChars = _chars) {
-                        var s = startOfSource + sourceOffset;
+            var sourceSpan = source;
+            var targetSpan = target;
+            var chars = _chars.AsSpan();
+            var targetIndex = 0;
+            var sourceIndex = 0;
 
-                        fixed (byte* startOfTarget = target) {
-                            var t = startOfTarget + targetOffset;
+            if (_charSize == 1) {
+                byte b1, b2, b3;
+                for (var i = 1; i < blockCount; i++) {
+                    b1 = sourceSpan[sourceIndex++];
+                    b2 = sourceSpan[sourceIndex++];
+                    b3 = sourceSpan[sourceIndex++];
 
-                            byte b1, b2, b3;
-                            for (var i = 1; i < blockCount; i++) {
-                                b1 = *s++;
-                                b2 = *s++;
-                                b3 = *s++;
+                    targetSpan[targetIndex++] = chars[(b1 & 0xFC) >> 2];
+                    targetSpan[targetIndex++] = chars[(b2 & 0xF0) >> 4 | (b1 & 0x03) << 4];
+                    targetSpan[targetIndex++] = chars[(b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2];
+                    targetSpan[targetIndex++] = chars[b3 & 0x3F];
+                }
 
-                                if (_charSize == 1) {
-                                    *t++ = startOfChars[(b1 & 0xFC) >> 2];
-                                    *t++ = startOfChars[(b2 & 0xF0) >> 4 | (b1 & 0x03) << 4];
-                                    *t++ = startOfChars[(b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2];
-                                    *t++ = startOfChars[b3 & 0x3F];
-                                }
-                                else {
-                                    var c = ((b1 & 0xFC) >> 2) * _charSize;
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = startOfChars[c + ci];
-                                    }
-                                    c = ((b2 & 0xF0) >> 4 | (b1 & 0x03) << 4) * _charSize;
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = startOfChars[c + ci];
-                                    }
-                                    c = ((b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2) * _charSize;
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = startOfChars[c + ci];
-                                    }
-                                    c = (b3 & 0x3F) * _charSize;
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = startOfChars[c + ci];
-                                    }
-                                }
-                            }
+                var usePadding2 = padding == 2;
+                var usePadding1 = padding > 0;
 
-                            var usePadding2 = padding == 2;
-                            var usePadding1 = padding > 0;
+                b1 = sourceSpan[sourceIndex++];
+                b2 = usePadding2 ? (byte)0 : sourceSpan[sourceIndex++];
+                b3 = usePadding1 ? (byte)0 : sourceSpan[sourceIndex++];
 
-                            b1 = *s++;
-                            b2 = usePadding2 ? (byte)0 : *s++;
-                            b3 = usePadding1 ? (byte)0 : *s++;
-
-                            if (_charSize == 1) {
-                                *t++ = startOfChars[(b1 & 0xFC) >> 2];
-                                *t++ = startOfChars[(b2 & 0xF0) >> 4 | (b1 & 0x03) << 4];
-                                *t++ = usePadding2 ? _paddingChar[0] : startOfChars[(b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2];
-                                *t++ = usePadding1 ? _paddingChar[0] : startOfChars[b3 & 0x3F];
-                            }
-                            else {
-                                var c = ((b1 & 0xFC) >> 2) * _charSize;
-                                for (var ci = 0; ci < _charSize; ci++) {
-                                    *t++ = startOfChars[c + ci];
-                                }
-                                c = ((b2 & 0xF0) >> 4 | (b1 & 0x03) << 4) * _charSize;
-                                for (var ci = 0; ci < _charSize; ci++) {
-                                    *t++ = startOfChars[c + ci];
-                                }
-                                if (usePadding2) {
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = _paddingChar[ci];
-                                    }
-                                }
-                                else {
-                                    c = ((b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2) * _charSize;
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = startOfChars[c + ci];
-                                    }
-                                }
-                                if (usePadding1) {
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = _paddingChar[ci];
-                                    }
-                                }
-                                else {
-                                    c = (b3 & 0x3F) * _charSize;
-                                    for (var ci = 0; ci < _charSize; ci++) {
-                                        *t++ = startOfChars[c + ci];
-                                    }
-                                }
-                            }
-                        }
+                targetSpan[targetIndex++] = chars[(b1 & 0xFC) >> 2];
+                targetSpan[targetIndex++] = chars[(b2 & 0xF0) >> 4 | (b1 & 0x03) << 4];
+                targetSpan[targetIndex++] = usePadding2 ? _paddingChar[0] : chars[(b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2];
+                targetSpan[targetIndex++] = usePadding1 ? _paddingChar[0] : chars[b3 & 0x3F];
+            }
+            else {
+                static void WriteChar(Span<byte> targetSpan, ReadOnlySpan<byte> chars, ref int targetIndex, int charIndex, int charSize)
+                {
+                    var offset = charIndex * charSize;
+                    for (var ci = 0; ci < charSize; ci++) {
+                        targetSpan[targetIndex++] = chars[offset + ci];
                     }
+                }
+
+                static void WritePadding(Span<byte> targetSpan, ReadOnlySpan<byte> paddingChars, ref int targetIndex, int charSize)
+                {
+                    for (var ci = 0; ci < charSize; ci++) {
+                        targetSpan[targetIndex++] = paddingChars[ci];
+                    }
+                }
+
+                byte b1, b2, b3;
+                for (var i = 1; i < blockCount; i++) {
+                    b1 = sourceSpan[sourceIndex++];
+                    b2 = sourceSpan[sourceIndex++];
+                    b3 = sourceSpan[sourceIndex++];
+
+                    WriteChar(targetSpan, chars, ref targetIndex, (b1 & 0xFC) >> 2, _charSize);
+                    WriteChar(targetSpan, chars, ref targetIndex, (b2 & 0xF0) >> 4 | (b1 & 0x03) << 4, _charSize);
+                    WriteChar(targetSpan, chars, ref targetIndex, (b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2, _charSize);
+                    WriteChar(targetSpan, chars, ref targetIndex, b3 & 0x3F, _charSize);
+                }
+
+                var usePadding2 = padding == 2;
+                var usePadding1 = padding > 0;
+
+                b1 = sourceSpan[sourceIndex++];
+                b2 = usePadding2 ? (byte)0 : sourceSpan[sourceIndex++];
+                b3 = usePadding1 ? (byte)0 : sourceSpan[sourceIndex++];
+
+                WriteChar(targetSpan, chars, ref targetIndex, (b1 & 0xFC) >> 2, _charSize);
+                WriteChar(targetSpan, chars, ref targetIndex, (b2 & 0xF0) >> 4 | (b1 & 0x03) << 4, _charSize);
+                if (usePadding2) {
+                    WritePadding(targetSpan, _paddingChar.AsSpan(), ref targetIndex, _charSize);
+                }
+                else {
+                    WriteChar(targetSpan, chars, ref targetIndex, (b3 & 0xC0) >> 6 | (b2 & 0x0F) << 2, _charSize);
+                }
+
+                if (usePadding1) {
+                    WritePadding(targetSpan, _paddingChar.AsSpan(), ref targetIndex, _charSize);
+                }
+                else {
+                    WriteChar(targetSpan, chars, ref targetIndex, b3 & 0x3F, _charSize);
                 }
             }
         }

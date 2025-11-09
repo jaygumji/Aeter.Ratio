@@ -12,7 +12,7 @@ namespace Aeter.Ratio.Binary.Converters
         /// </summary>
         /// <param name="value"></param>
         /// <param name="buffer"></param>
-        private static void GetBytes(decimal value, byte[] buffer, int o)
+        private static void GetBytes(decimal value, Span<byte> buffer, int o)
         {
             var bits = Decimal.GetBits(value);
             var lo = bits[0];
@@ -43,7 +43,7 @@ namespace Aeter.Ratio.Binary.Converters
         /// </summary>
         /// <param name="buffer"></param>
         /// <returns></returns>
-        private static decimal ToDecimal(byte[] buffer, int s)
+        private static decimal ToDecimal(ReadOnlySpan<byte> buffer, int s)
         {
             int num = (int)buffer[s] | (int)buffer[s + 1] << 8 | (int)buffer[s + 2] << 16 | (int)buffer[s + 3] << 24;
             int num2 = (int)buffer[s + 4] | (int)buffer[s + 5] << 8 | (int)buffer[s + 6] << 16 | (int)buffer[s + 7] << 24;
@@ -52,19 +52,17 @@ namespace Aeter.Ratio.Binary.Converters
             return new Decimal(new int[] { num, num2, num3, num4 });
         }
 
-        public Decimal Convert(byte[] value)
+        public Decimal Convert(Span<byte> value)
         {
-            if (value == null) throw new ArgumentNullException("value");
             return Convert(value, 0, value.Length);
         }
 
-        public Decimal Convert(byte[] value, int startIndex)
+        public Decimal Convert(Span<byte> value, int startIndex)
         {
-            if (value == null) throw new ArgumentNullException("value");
             return ToDecimal(value, startIndex);
         }
 
-        public Decimal Convert(byte[] value, int startIndex, int length)
+        public Decimal Convert(Span<byte> value, int startIndex, int length)
         {
             return Convert(value, startIndex);
         }
@@ -76,19 +74,17 @@ namespace Aeter.Ratio.Binary.Converters
             return result;
         }
 
-        object IBinaryConverter.Convert(byte[] value)
+        object IBinaryConverter.Convert(Span<byte> value)
         {
-            if (value == null) throw new ArgumentNullException("value");
             return Convert(value, 0, value.Length);
         }
 
-        object IBinaryConverter.Convert(byte[] value, int startIndex)
+        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
         {
-            if (value == null) throw new ArgumentNullException("value");
             return Convert(value, startIndex, value.Length - startIndex);
         }
 
-        object IBinaryConverter.Convert(byte[] value, int startIndex, int length)
+        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
         {
             return Convert(value, startIndex, length);
         }
@@ -98,34 +94,33 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((Decimal)value);
         }
 
-        public void Convert(Decimal value, byte[] buffer)
+        public void Convert(Decimal value, Span<byte> buffer)
         {
             Convert(value, buffer, 0);
         }
 
-        public void Convert(Decimal value, byte[] buffer, int offset)
+        public void Convert(Decimal value, Span<byte> buffer, int offset)
         {
-            if (buffer == null) throw new ArgumentNullException("buffer");
             if (buffer.Length < offset + 16)
                 throw new BufferOverflowException("The buffer can not contain the value");
 
             GetBytes(value, buffer, offset);
         }
 
-        void IBinaryConverter.Convert(object value, byte[] buffer)
+        void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
             Convert((Decimal)value, buffer, 0);
         }
 
-        void IBinaryConverter.Convert(object value, byte[] buffer, int offset)
+        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
         {
             Convert((Decimal)value, buffer, offset);
         }
 
         public void Convert(Decimal value, BinaryWriteBuffer writeBuffer)
         {
-            var offset = writeBuffer.Advance(16);
-            Convert(value, writeBuffer.Buffer, offset);
+            var bytes = Convert(value);
+            writeBuffer.Write(bytes);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)

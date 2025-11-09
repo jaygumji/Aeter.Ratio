@@ -7,9 +7,8 @@ using Aeter.Ratio.Serialization.Bson;
 using Aeter.Ratio.Testing.Fakes.Graphs;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Aeter.Ratio.Test.Serialization.Bson
 {
@@ -17,11 +16,13 @@ namespace Aeter.Ratio.Test.Serialization.Bson
     {
         private readonly BsonEncoding _encoding;
         private readonly IFieldNameResolver _fieldNameResolver;
+        private readonly ITestOutputHelper output;
 
-        public BsonSerializationTestContext()
+        public BsonSerializationTestContext(ITestOutputHelper output)
         {
             _encoding = BsonEncoding.UTF8;
             _fieldNameResolver = new CamelCaseFieldNameResolver();
+            this.output = output;
         }
 
         public void AssertDeserialize<T>(byte[] bson, T expected)
@@ -73,7 +74,13 @@ namespace Aeter.Ratio.Test.Serialization.Bson
         public void AssertSerialize<T>(byte[] expected, T graph)
         {
             var bytes = Serialize(graph);
-            Assert.Equal(expected, bytes);
+            if (!BlobComparer.Instance.Equals(expected, bytes)) {
+                output.WriteLine("Expected b16: " + ValueConverter.ToBase16String(expected));
+                output.WriteLine("Actual b16: " + ValueConverter.ToBase16String(bytes));
+                output.WriteLine("Expected b64: " + Convert.ToBase64String(expected));
+                output.WriteLine("Actual b64: " + Convert.ToBase64String(bytes));
+            }
+            Assert.Equal(expected, bytes, BlobComparer.Instance);
         }
 
         protected override ITypedSerializer<T> CreateSerializer<T>()

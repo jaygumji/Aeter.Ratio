@@ -16,7 +16,7 @@ namespace Aeter.Ratio.Serialization.Json
 
         public override bool ReadNext(ref byte next)
         {
-            var buffer = Buffer.Buffer;
+            var buffer = Buffer.Span;
             var pos = Buffer.Position;
             var b1 = buffer[pos];
             var b2 = buffer[pos + 1];

@@ -18,34 +18,34 @@ namespace Aeter.Ratio.Binary.Converters
             }
         }
 
-        public unsafe void MapTo(ref byte* s, ref byte* t)
+        public void MapTo(ReadOnlySpan<byte> source, ref int sourceIndex, Span<byte> target, ref int targetIndex)
         {
-            var b1 = _map[*s++];
-            var b2 = _map[*s++];
+            var b1 = _map[source[sourceIndex++]];
+            var b2 = _map[source[sourceIndex++]];
 
-            *t++ = (byte)((b1 << 2) | ((b2 & 0x30) >> 4));
-            b1 = _map[*s++];
-            *t++ = (byte)(((b1 & 0x3C) >> 2) | ((b2 & 0x0F) << 4));
-            b2 = _map[*s++];
-            *t++ = (byte)(((b1 & 0x03) << 6) | b2);
+            target[targetIndex++] = (byte)((b1 << 2) | ((b2 & 0x30) >> 4));
+            b1 = _map[source[sourceIndex++]];
+            target[targetIndex++] = (byte)(((b1 & 0x3C) >> 2) | ((b2 & 0x0F) << 4));
+            b2 = _map[source[sourceIndex++]];
+            target[targetIndex++] = (byte)(((b1 & 0x03) << 6) | b2);
         }
 
-        public unsafe void MapLast(ref byte* s, ref byte* t, ref int padding)
+        public void MapLast(ReadOnlySpan<byte> source, ref int sourceIndex, Span<byte> target, ref int targetIndex, ref int padding)
         {
-            var b1 = _map[*s++];
-            var b2 = _map[*s++];
+            var b1 = _map[source[sourceIndex++]];
+            var b2 = _map[source[sourceIndex++]];
 
-            *t++ = (byte)((b1 << 2) | ((b2 & 0x30) >> 4));
+            target[targetIndex++] = (byte)((b1 << 2) | ((b2 & 0x30) >> 4));
 
-            b1 = _map[*s++];
+            b1 = _map[source[sourceIndex++]];
 
             if (padding != 2) {
-                *t++ = (byte)(((b1 & 0x3C) >> 2) | ((b2 & 0x0F) << 4));
+                target[targetIndex++] = (byte)(((b1 & 0x3C) >> 2) | ((b2 & 0x0F) << 4));
             }
 
-            b2 = _map[*s++];
+            b2 = _map[source[sourceIndex++]];
             if (padding == 0) {
-                *t++ = (byte)(((b1 & 0x03) << 6) | b2);
+                target[targetIndex++] = (byte)(((b1 & 0x03) << 6) | b2);
             }
         }
 

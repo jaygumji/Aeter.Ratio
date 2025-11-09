@@ -57,7 +57,7 @@ namespace Aeter.Ratio.Test.Serialization.Bson
                 TimeSpan = new TimeSpan(10, 30, 00),
                 UInt16 = 64322,
                 UInt32 = 3454654454,
-                UInt64 = 9859459485984955454,
+                UInt64 = 985945948598495545, // Must not be above long.MaxValue
                 Stamps = new[] { new DateTime(2010, 03, 01, 22, 00, 00) },
                 Relation = new Relation {
                     Id = Guid.Parse("F68EF7D4-6F62-476B-BC5E-71AD86549A63"),

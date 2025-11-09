@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Binary;
-using Aeter.Ratio.Serialization.Json;
 using System;
 using System.Collections.Generic;
 
@@ -42,14 +41,11 @@ namespace Aeter.Ratio.Serialization.Bson
 
         private void WriteString(string value, bool includeLength)
         {
-            //if (value == null) {
-            //    _writeBuffer.WriteByte((byte)BsonTypeCode.Null);
-            //    return;
-            //}
-            //_writeBuffer.WriteByte((byte)BsonTypeCode.String);
-            _writeBuffer.RequestSpace(value.Length * 4 + 4);
+            _writeBuffer.RequestSpace(value.Length * 4 + 4 + 1);
             var offset = includeLength ? _writeBuffer.Position + 4 : _writeBuffer.Position;
-            var length = _encoding.BaseEncoding.GetBytes(value, 0, value.Length, _writeBuffer.Buffer, offset) + 1;
+            var bytesWritten = _encoding.BaseEncoding.GetBytes(value, _writeBuffer.Span[offset..]);
+            _writeBuffer.Span[offset + bytesWritten] = BsonEncoding.ZeroTermination;
+            var length = bytesWritten + 1;
             if (includeLength) {
                 var lengthBytes = BitConverter.GetBytes(length);
                 _writeBuffer.Write(lengthBytes);
@@ -100,8 +96,8 @@ namespace Aeter.Ratio.Serialization.Bson
                 return;
             }
 
-            _writeBuffer.ApplyInt32Size(_states.Pop());
             _writeBuffer.WriteByte(0);
+            _writeBuffer.ApplyInt32Size(_states.Pop());
         }
 
         private void WritePropertyType<T>(T? value, BsonTypeCode type)
@@ -116,7 +112,6 @@ namespace Aeter.Ratio.Serialization.Bson
 
         private void WritePropertyHeader<T>(T? value, VisitArgs args, BsonTypeCode type)
         {
-            if (args.Name == null) return;
             switch (args.Type) {
                 case LevelType.CollectionItem:
                     WritePropertyType(value, type);
@@ -126,10 +121,14 @@ namespace Aeter.Ratio.Serialization.Bson
                     // Dictionary keys are written as value without length
                     return;
                 case LevelType.DictionaryValue:
+                    WritePropertyType(value, type);
                     // The preceding DictionaryKey visit should have written the header
                     return;
             }
+            if (args.Name == null) return;
+
             WritePropertyType(value, type);
+
             // Written as cstring
             WriteString(_fieldNameResolver.Resolve(args), includeLength: false);
         }
@@ -137,6 +136,12 @@ namespace Aeter.Ratio.Serialization.Bson
         private void WriteValueDefault<T>(T? value, VisitArgs args, BsonTypeCode type, IBinaryInformation<T> info)
             where T : struct
         {
+            if (args.Type == LevelType.DictionaryKey) {
+                if (value is null) throw new ArgumentException("Dictionary keys can not be null");
+                var actValue = ValueConverter.Text(value); // Dictionary keys must be of type string
+                WriteString(actValue, includeLength: false);
+                return;
+            }
             WritePropertyHeader(value, args, type);
             if (value == null) {
                 return;
@@ -178,20 +183,17 @@ namespace Aeter.Ratio.Serialization.Bson
 
         public void VisitValue(uint? value, VisitArgs args)
         {
-            WriteValueDefault((int?)value, args, BsonTypeCode.Int32, BinaryInformation.Int32);
+            WriteValueDefault((long?)value, args, BsonTypeCode.Int64, BinaryInformation.Int64);
         }
 
         public void VisitValue(ulong? value, VisitArgs args)
         {
+            if (value.HasValue && value.Value > long.MaxValue) throw UnexpectedBsonException.Validation("Unsigned long can not be greater than long.MaxValue due to limitations in BSON.");
             WriteValueDefault((long?)value, args, BsonTypeCode.Int64, BinaryInformation.Int64);
         }
 
         public void VisitValue(bool? value, VisitArgs args)
         {
-            if (args.Type == LevelType.DictionaryKey) {
-                throw new NotSupportedException("A boolean is not supported as dictionary key.");
-            }
-
             WritePropertyHeader(value, args, BsonTypeCode.Boolean);
             if (value == null) {
                 return;
@@ -216,12 +218,12 @@ namespace Aeter.Ratio.Serialization.Bson
 
         public void VisitValue(TimeSpan? value, VisitArgs args)
         {
-            WriteValueDefault((ulong?)value?.Ticks, args, BsonTypeCode.UInt64, BinaryInformation.UInt64);
+            WriteValueDefault((ulong?)value?.TotalMilliseconds, args, BsonTypeCode.UInt64, BinaryInformation.UInt64);
         }
 
         public void VisitValue(DateTime? value, VisitArgs args)
         {
-            WriteValueDefault((ulong?)value?.Ticks, args, BsonTypeCode.UInt64, BinaryInformation.UInt64);
+            WriteValueDefault((ulong?)value?.Subtract(DateTime.UnixEpoch).TotalMilliseconds, args, BsonTypeCode.UInt64, BinaryInformation.UInt64);
         }
 
         public void VisitValue(string? value, VisitArgs args)

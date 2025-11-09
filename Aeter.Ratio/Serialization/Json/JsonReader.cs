@@ -74,7 +74,7 @@ namespace Aeter.Ratio.Serialization.Json
 
                 first = _buffer.PeekByte();
             }
-            
+
             if (IsLiteral(first, _encoding.ObjectBegin, advance)) {
                 return JsonLiteral.ObjectBegin;
             }
@@ -156,32 +156,32 @@ namespace Aeter.Ratio.Serialization.Json
 
         private bool IsNextCharacter(byte[] charCode, int offset)
         {
-            if (_buffer.Buffer[offset] != charCode[0]) {
+            if (_buffer.Span[offset] != charCode[0]) {
                 return false;
             }
             if (charCode.Length == 1) {
                 return true;
             }
-            if (_buffer.Buffer[offset + 1] != charCode[1]) {
+            if (_buffer.Span[offset + 1] != charCode[1]) {
                 return false;
             }
             if (charCode.Length == 2) {
                 return true;
             }
-            if (_buffer.Buffer[offset + 2] != charCode[2]) {
+            if (_buffer.Span[offset + 2] != charCode[2]) {
                 return false;
             }
             if (charCode.Length == 3) {
                 return true;
             }
-            return _buffer.Buffer[offset + 3] == charCode[3];
+            return _buffer.Span[offset + 3] == charCode[3];
         }
 
         private void AppendString(StringBuilder b, int offset)
         {
             if (_buffer.Position == offset) return;
             var length = offset - _buffer.Position;
-            var str = _encoding.BaseEncoding.GetString(_buffer.Buffer, _buffer.Position, length);
+            var str = _encoding.BaseEncoding.GetString(_buffer.Span.Slice(_buffer.Position, length));
             b.Append(str);
             _buffer.Advance(length);
         }
@@ -248,7 +248,7 @@ namespace Aeter.Ratio.Serialization.Json
                     }
 
                 }
-                offset += _encoding.GetCharacterSize(_buffer.Buffer, offset);
+                offset += _encoding.GetCharacterSize(_buffer.Span, offset);
             } while (true);
 
         }

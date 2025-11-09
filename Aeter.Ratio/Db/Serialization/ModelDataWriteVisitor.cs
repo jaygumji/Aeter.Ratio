@@ -85,7 +85,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetSLength(value.Value);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackS(_writeBuffer.Buffer, offset, value.Value, length);
+            BinaryPV64Packer.PackS(_writeBuffer.Span, offset, value.Value, length);
         }
 
         public void VisitValue(int? value, VisitArgs args)
@@ -101,7 +101,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetSLength(value.Value);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackS(_writeBuffer.Buffer, offset, value.Value, length);
+            BinaryPV64Packer.PackS(_writeBuffer.Span, offset, value.Value, length);
         }
 
         public void VisitValue(long? value, VisitArgs args)
@@ -117,7 +117,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetSLength(value.Value);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackS(_writeBuffer.Buffer, offset, value.Value, length);
+            BinaryPV64Packer.PackS(_writeBuffer.Span, offset, value.Value, length);
         }
 
         public void VisitValue(ushort? value, VisitArgs args)
@@ -133,7 +133,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetULength(value.Value);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackU(_writeBuffer.Buffer, offset, value.Value, length);
+            BinaryPV64Packer.PackU(_writeBuffer.Span, offset, value.Value, length);
         }
 
         public void VisitValue(uint? value, VisitArgs args)
@@ -149,7 +149,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetULength(value.Value);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackU(_writeBuffer.Buffer, offset, value.Value, length);
+            BinaryPV64Packer.PackU(_writeBuffer.Span, offset, value.Value, length);
         }
 
         public void VisitValue(ulong? value, VisitArgs args)
@@ -165,7 +165,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetULength(value.Value);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackU(_writeBuffer.Buffer, offset, value.Value, length);
+            BinaryPV64Packer.PackU(_writeBuffer.Span, offset, value.Value, length);
         }
 
         public void VisitValue(bool? value, VisitArgs args)
@@ -243,7 +243,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetSLength(value.Value.Ticks);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackS(_writeBuffer.Buffer, offset, value.Value.Ticks, length);
+            BinaryPV64Packer.PackS(_writeBuffer.Span, offset, value.Value.Ticks, length);
         }
 
         public void VisitValue(DateTime? value, VisitArgs args)
@@ -262,7 +262,7 @@ namespace Aeter.Ratio.Db.Serialization
             var length = BinaryPV64Packer.GetSLength(value.Value.Ticks);
             _writeBuffer.WriteByte(length);
             var offset = _writeBuffer.Advance(length);
-            BinaryPV64Packer.PackS(_writeBuffer.Buffer, offset, value.Value.Ticks, length);
+            BinaryPV64Packer.PackS(_writeBuffer.Span, offset, value.Value.Ticks, length);
         }
 
         public void VisitValue(string? value, VisitArgs args)
@@ -285,7 +285,7 @@ namespace Aeter.Ratio.Db.Serialization
             }
 
             var position = _writeBuffer.Advance(length);
-            Encoding.GetBytes(value, 0, value.Length, _writeBuffer.Buffer, position);
+            Encoding.GetBytes(value.AsSpan(), _writeBuffer.Span[position..]);
         }
 
         public void VisitValue(Guid? value, VisitArgs args)

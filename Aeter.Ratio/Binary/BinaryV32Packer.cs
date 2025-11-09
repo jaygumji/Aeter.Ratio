@@ -36,7 +36,7 @@ namespace Aeter.Ratio.Binary
         {
             var length = nullableValue.HasValue ? GetULength(nullableValue.Value) : 1;
             var position = writeBuffer.Advance(length);
-            PackU(writeBuffer.Buffer, position, length, nullableValue);
+            PackU(writeBuffer.Span, position, length, nullableValue);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Aeter.Ratio.Binary
         /// <param name="length">The length.</param>
         /// <param name="nullableValue">The value to pack</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void PackU(byte[] buffer, int offset, int length, uint? nullableValue)
+        private static void PackU(Span<byte> buffer, int offset, int length, uint? nullableValue)
         {
             if (!nullableValue.HasValue) {
                 buffer[offset] = 7;

@@ -131,13 +131,12 @@ namespace Aeter.Ratio.Serialization.Json
                     position = _writeBuffer.Position;
                 }
                 if (index < i - 1) {
-                    position += _encoding.BaseEncoding.GetBytes(value, index, i - index, _writeBuffer.Buffer, position);
+                    position += _encoding.BaseEncoding.GetBytes(value.AsSpan(index, i), _writeBuffer.Span[position..]);
                 }
                 index = i + 1;
-                Buffer.BlockCopy(_encoding.ReverseSolidus, 0, _writeBuffer.Buffer, position,
-                    _encoding.ReverseSolidus.Length);
+                _encoding.ReverseSolidus.AsSpan().CopyTo(_writeBuffer.Span.Slice(position, _encoding.ReverseSolidus.Length));
                 position += _encoding.ReverseSolidus.Length;
-                Buffer.BlockCopy(charBytes, 0, _writeBuffer.Buffer, position, charBytes.Length);
+                charBytes.AsSpan().CopyTo(_writeBuffer.Span.Slice(position, charBytes.Length));
                 position += charBytes.Length;
             }
             if (index == 0) {
@@ -147,7 +146,7 @@ namespace Aeter.Ratio.Serialization.Json
             }
 
             if (index < value.Length) {
-                position += _encoding.BaseEncoding.GetBytes(value, index, value.Length, _writeBuffer.Buffer, position);
+                position += _encoding.BaseEncoding.GetBytes(value.AsSpan(index), _writeBuffer.Span[position..]);
             }
 
             _writeBuffer.Advance(position - _writeBuffer.Position);
@@ -346,7 +345,7 @@ namespace Aeter.Ratio.Serialization.Json
                 _writeBuffer.Write(_encoding.Quote);
                 var size = _encoding.Base64.GetEncodedSizeOf(value);
                 var offset = _writeBuffer.Advance(size);
-                _encoding.Base64.Encode(value, 0, value.Length, _writeBuffer.Buffer, offset);
+                _encoding.Base64.Encode(value.AsSpan(), _writeBuffer.Span[offset..]);
                 _writeBuffer.Write(_encoding.Quote);
             }
 

@@ -5,7 +5,7 @@ namespace Aeter.Ratio.Binary.Converters
 {
     public interface IBase64CharacterMap
     {
-        unsafe void MapLast(ref byte* s, ref byte* t, ref int padding);
-        unsafe void MapTo(ref byte* s, ref byte* t);
+        void MapLast(System.ReadOnlySpan<byte> source, ref int sourceIndex, System.Span<byte> target, ref int targetIndex, ref int padding);
+        void MapTo(System.ReadOnlySpan<byte> source, ref int sourceIndex, System.Span<byte> target, ref int targetIndex);
     }
 }

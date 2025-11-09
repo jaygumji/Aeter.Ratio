@@ -21,40 +21,42 @@ namespace Aeter.Ratio.Binary.Converters
 
         public int GetSizeOf(byte[] value)
         {
+            if (value == null) throw new ArgumentNullException(nameof(value));
             return GetSizeOf(value, 0, value.Length);
         }
 
         public int GetSizeOf(byte[] value, int offset, int count)
         {
-            unsafe {
-                fixed (byte* vp = value) {
-                    var v = vp + offset;
-                    SizeOf(v, count, out var targetSize, out var padding);
-                    return targetSize;
-                }
-            }
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (offset < 0 || offset > value.Length) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (count < 0 || offset + count > value.Length) throw new ArgumentOutOfRangeException(nameof(count));
+
+            var span = value.AsSpan(offset, count);
+            SizeOf(span, out var targetSize, out _);
+            return targetSize;
         }
 
-        private unsafe void SizeOf(byte* v, int count, out int targetSize, out int padding)
+        private void SizeOf(ReadOnlySpan<byte> span, out int targetSize, out int padding)
         {
+            var count = span.Length;
             var charCount = count / _charSize;
             var blockCount = (charCount - 1) / 4 + 1;
             targetSize = blockCount * 3;
             padding = blockCount * 4 - charCount;
 
             if (_charSize == 1) {
-                if (count > 2 && v[count - 2] == _paddingChar[0]) {
+                if (count > 2 && span[count - 2] == _paddingChar[0]) {
                     padding = 2;
                 }
-                else if (count > 1 && v[count - 1] == _paddingChar[0]) {
+                else if (count > 1 && span[count - 1] == _paddingChar[0]) {
                     padding = 1;
                 }
             }
             else {
-                if (count > 2 && IsEqual(v + count - (2 * _charSize), _paddingChar)) {
+                if (count > 2 && IsEqual(span.Slice(count - (2 * _charSize), _charSize), _paddingChar)) {
                     padding = 2;
                 }
-                else if (count > 1 && IsEqual(v + count - _charSize, _paddingChar)) {
+                else if (count > 1 && IsEqual(span.Slice(count - _charSize, _charSize), _paddingChar)) {
                     padding = 1;
                 }
             }
@@ -62,7 +64,7 @@ namespace Aeter.Ratio.Binary.Converters
             targetSize -= padding;
         }
 
-        private unsafe bool IsEqual(byte* left, byte[] right)
+        private bool IsEqual(ReadOnlySpan<byte> left, byte[] right)
         {
             for (var i = 0; i < _charSize; i++) {
                 if (left[i] != right[i]) {
@@ -76,6 +78,9 @@ namespace Aeter.Ratio.Binary.Converters
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));
+            if (targetOffset < 0 || targetOffset > target.Length) {
+                throw new ArgumentException("The target offset is not within the bounds of the array.");
+            }
 
             if (sourceCount == 0) {
                 return;
@@ -84,49 +89,55 @@ namespace Aeter.Ratio.Binary.Converters
             if (sourceOffset < 0 || sourceOffset >= source.Length) {
                 throw new ArgumentException("The source offset is not within the bounds of the array.");
             }
+            if (sourceCount < 0 || sourceOffset + sourceCount > source.Length) {
+                throw new ArgumentException("The source count is not within the bounds of the array.");
+            }
 
+            var sourceSpan = source.AsSpan(sourceOffset, sourceCount);
+            var targetSpan = target.AsSpan(targetOffset);
+            Decode(sourceSpan, targetSpan);
+        }
+
+        public void Decode(ReadOnlySpan<byte> source, Span<byte> target)
+        {
+            if (source.Length == 0) {
+                return;
+            }
+
+            var sourceCount = source.Length;
             var charCount = sourceCount / _charSize;
             var blockCount = (charCount - 1) / 4 + 1;
 
-            var targetLength = target.Length;
+            SizeOf(source, out var numberOfBytes, out var padding);
+            if (numberOfBytes > target.Length) {
+                throw new ArgumentException("The base64 encoding does not fit into the target span.");
+            }
 
-            unsafe {
-                fixed (byte* startOfSource = source) {
-                    var s = startOfSource + sourceOffset;
-
-                    SizeOf(s, sourceCount, out var numberOfBytes, out var padding);
-                    if (numberOfBytes > targetLength - targetOffset) {
-                        throw new ArgumentException("The base64 encoding does not fit into the target array.");
-                    }
-
-                    if (_charSize == 1) {
-                        if (sourceCount > 2 && s[sourceCount - 2] == _paddingChar[0]) {
-                            padding = 2;
-                        }
-                        else if (sourceCount > 1 && s[sourceCount - 1] == _paddingChar[0]) {
-                            padding = 1;
-                        }
-                    }
-                    else {
-                        if (sourceCount > 2 && IsEqual(s + sourceCount - (2 * _charSize), _paddingChar)) {
-                            padding = 2;
-                        }
-                        else if (sourceCount > 1 && IsEqual(s + sourceCount - _charSize, _paddingChar)) {
-                            padding = 1;
-                        }
-                    }
-
-                    fixed (byte* startOfTarget = target) {
-                        var t = startOfTarget + targetOffset;
-
-                        for (var i = 1; i < blockCount; i++) {
-                            _map.MapTo(ref s, ref t);
-                        }
-
-                        _map.MapLast(ref s, ref t, ref padding);
-                    }
+            if (_charSize == 1) {
+                if (sourceCount > 2 && source[sourceCount - 2] == _paddingChar[0]) {
+                    padding = 2;
+                }
+                else if (sourceCount > 1 && source[sourceCount - 1] == _paddingChar[0]) {
+                    padding = 1;
                 }
             }
+            else {
+                if (sourceCount > 2 && IsEqual(source.Slice(sourceCount - (2 * _charSize), _charSize), _paddingChar)) {
+                    padding = 2;
+                }
+                else if (sourceCount > 1 && IsEqual(source.Slice(sourceCount - _charSize, _charSize), _paddingChar)) {
+                    padding = 1;
+                }
+            }
+
+            var sourceIndex = 0;
+            var targetIndex = 0;
+
+            for (var i = 1; i < blockCount; i++) {
+                _map.MapTo(source, ref sourceIndex, target, ref targetIndex);
+            }
+
+            _map.MapLast(source, ref sourceIndex, target, ref targetIndex, ref padding);
         }
 
     }

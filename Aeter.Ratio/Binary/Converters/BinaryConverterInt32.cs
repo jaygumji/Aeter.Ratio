@@ -2,23 +2,22 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
+using System.Buffers.Binary;
 namespace Aeter.Ratio.Binary.Converters
 {
     public class BinaryConverterInt32 : IBinaryConverter<Int32>
     {
-        public Int32 Convert(byte[] value)
+        public Int32 Convert(Span<byte> value)
         {
-            if (value == null) throw new ArgumentNullException("value");
             return Convert(value, 0, value.Length);
         }
 
-        public Int32 Convert(byte[] value, int startIndex)
+        public Int32 Convert(Span<byte> value, int startIndex)
         {
-            if (value == null) throw new ArgumentNullException("value");
-            return BitConverter.ToInt32(value, startIndex);
+            return BinaryPrimitives.ReadInt32LittleEndian(value.Slice(startIndex));
         }
 
-        public Int32 Convert(byte[] value, int startIndex, int length)
+        public Int32 Convert(Span<byte> value, int startIndex, int length)
         {
             return Convert(value, startIndex);
         }
@@ -28,19 +27,17 @@ namespace Aeter.Ratio.Binary.Converters
             return BitConverter.GetBytes(value);
         }
 
-        object IBinaryConverter.Convert(byte[] value)
+        object IBinaryConverter.Convert(Span<byte> value)
         {
-            if (value == null) throw new ArgumentNullException("value");
             return Convert(value, 0, value.Length);
         }
 
-        object IBinaryConverter.Convert(byte[] value, int startIndex)
+        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
         {
-            if (value == null) throw new ArgumentNullException("value");
             return Convert(value, startIndex, value.Length - startIndex);
         }
 
-        object IBinaryConverter.Convert(byte[] value, int startIndex, int length)
+        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
         {
             return Convert(value, startIndex, length);
         }
@@ -50,34 +47,32 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((Int32)value);
         }
 
-        public void Convert(Int32 value, byte[] buffer)
+        public void Convert(Int32 value, Span<byte> buffer)
         {
             Convert(value, buffer, 0);
         }
 
-        public void Convert(Int32 value, byte[] buffer, int offset)
+        public void Convert(Int32 value, Span<byte> buffer, int offset)
         {
-            if (buffer == null) throw new ArgumentNullException("buffer");
-            var bytes = Convert(value);
-            if (buffer.Length < offset + bytes.Length)
+            if (buffer.Length < offset + 4)
                 throw new BufferOverflowException("The buffer can not contain the value");
-            Array.Copy(bytes, 0, buffer, offset, bytes.Length);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(offset), value);
         }
 
-        void IBinaryConverter.Convert(object value, byte[] buffer)
+        void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
             Convert((Int32)value, buffer, 0);
         }
 
-        void IBinaryConverter.Convert(object value, byte[] buffer, int offset)
+        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
         {
             Convert((Int32)value, buffer, offset);
         }
 
         public void Convert(Int32 value, BinaryWriteBuffer writeBuffer)
         {
-            var offset = writeBuffer.Advance(4);
-            Convert(value, writeBuffer.Buffer, offset);
+            var bytes = Convert(value);
+            writeBuffer.Write(bytes);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)

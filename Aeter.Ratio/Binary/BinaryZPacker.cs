@@ -79,11 +79,11 @@ namespace Aeter.Ratio.Binary
 
             var length = GetLength(value);
             var position = writeBuffer.Advance(length);
-            Pack(writeBuffer.Buffer, position, length, value);
+            Pack(writeBuffer.Span, position, length, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Pack(byte[] buffer, int offset, int length, uint value)
+        private static void Pack(Span<byte> buffer, int offset, int length, uint value)
         {
             if (value > ZMaxValue)
                 throw new ArgumentOutOfRangeException("value", value, "Must be between 0 and " + ZMaxValue);
