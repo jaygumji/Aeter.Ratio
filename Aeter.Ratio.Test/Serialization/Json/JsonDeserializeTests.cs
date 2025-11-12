@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Serialization;
 using Aeter.Ratio.Serialization.Json;
 using Aeter.Ratio.Testing.Fakes.Graphs;
 using System;
@@ -158,13 +159,13 @@ namespace Aeter.Ratio.Test.Serialization.Json
         [Fact]
         public void SerializeAndDeserializeDataBlock()
         {
-            var serializer = new JsonSerializer<JsonDataBlock>();
+            var serializer = new JsonSerializer();
             var serStream = new MemoryStream();
             var block = JsonDataBlock.Filled();
             serializer.Serialize(serStream, block);
             var blob = serStream.ToArray();
             var desStream = new MemoryStream(blob);
-            var desBlock = serializer.Deserialize(desStream);
+            var desBlock = serializer.Deserialize<JsonDataBlock>(desStream);
             desBlock.AssertEqualTo(block);
         }
 

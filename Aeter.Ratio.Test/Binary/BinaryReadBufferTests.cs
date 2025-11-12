@@ -1,10 +1,11 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Binary;
+using Aeter.Ratio.IO;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Aeter.Ratio.Binary;
 using Xunit;
 
 namespace Aeter.Ratio.Test.Binary
@@ -16,7 +17,7 @@ namespace Aeter.Ratio.Test.Binary
         {
             var payload = Enumerable.Range(0, 5).Select(i => (byte)i).ToArray();
             using var stream = new MemoryStream(payload);
-            using var buffer = new BinaryReadBuffer(2, stream);
+            using var buffer = new BinaryReadBuffer(2, BinaryStream.MemoryStream(stream));
 
             var observed = new List<byte>();
             for (var i = 0; i < payload.Length; i++) {
@@ -31,7 +32,7 @@ namespace Aeter.Ratio.Test.Binary
         {
             var payload = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
             using var stream = new MemoryStream(payload);
-            using var buffer = new BinaryReadBuffer(3, stream);
+            using var buffer = new BinaryReadBuffer(3, BinaryStream.MemoryStream(stream));
             var destination = new byte[6];
 
             buffer.CopyTo(destination, 0, destination.Length);

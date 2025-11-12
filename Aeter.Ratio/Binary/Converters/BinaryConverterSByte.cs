@@ -6,39 +6,41 @@ namespace Aeter.Ratio.Binary.Converters
 {
     public class BinaryConverterSByte : IBinaryConverter<SByte>
     {
-        public SByte Convert(Span<byte> value)
-        {
-            return Convert(value, 0, value.Length);
-        }
+        private const int Size = sizeof(SByte);
 
-        public SByte Convert(Span<byte> value, int startIndex)
+        public SByte Convert(ReadOnlySpan<byte> value)
         {
-            return (SByte) value[startIndex];
-        }
-
-        public SByte Convert(Span<byte> value, int startIndex, int length)
-        {
-            return Convert(value, startIndex);
+            if (value.Length < Size)
+                throw new ArgumentException("The span does not contain enough data.", nameof(value));
+            unchecked
+            {
+                return (sbyte)value[0];
+            }
         }
 
         public byte[] Convert(SByte value)
         {
-            return new byte[] { (byte)value };
+            return new[] { unchecked((byte)value) };
         }
 
-        object IBinaryConverter.Convert(Span<byte> value)
+        public void Convert(SByte value, Span<byte> buffer)
         {
-            return Convert(value, 0, value.Length);
+            if (buffer.Length < Size)
+                throw new BufferOverflowException("The buffer can not contain the value");
+            unchecked
+            {
+                buffer[0] = (byte)value;
+            }
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
+        public void Convert(SByte value, BinaryWriteBuffer writeBuffer)
         {
-            return Convert(value, startIndex, value.Length - startIndex);
+            writeBuffer.WriteByte(unchecked((byte)value));
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
+        object IBinaryConverter.Convert(ReadOnlySpan<byte> value)
         {
-            return Convert(value, startIndex, length);
+            return Convert(value);
         }
 
         byte[] IBinaryConverter.Convert(object value)
@@ -46,33 +48,9 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((SByte)value);
         }
 
-        public void Convert(SByte value, Span<byte> buffer)
-        {
-            Convert(value, buffer, 0);
-        }
-
-        public void Convert(SByte value, Span<byte> buffer, int offset)
-        {
-            if (buffer.Length < offset + 1)
-                throw new BufferOverflowException("The buffer can not contain the value");
-            var b = (byte) value;
-            buffer[offset] = b;
-        }
-
         void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
-            Convert((SByte)value, buffer, 0);
-        }
-
-        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
-        {
-            Convert((SByte)value, buffer, offset);
-        }
-
-        public void Convert(SByte value, BinaryWriteBuffer writeBuffer)
-        {
-            var bytes = Convert(value);
-            writeBuffer.Write(bytes);
+            Convert((SByte)value, buffer);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)

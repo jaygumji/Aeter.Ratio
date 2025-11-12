@@ -1,189 +1,123 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.IO;
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Aeter.Ratio.IO;
-using Aeter.Ratio.Threading;
 
 namespace Aeter.Ratio.Binary
 {
     /// <summary>
-    /// A synchronized binary store of data, guaranteed threadsafe.
+    /// A synchronized binary store of data
     /// </summary>
-    /// <seealso cref="Enigma.Db.Store.Binary.IBinaryStore" />
     /// <seealso cref="System.IDisposable" />
-    public class BinaryStore : IBinaryStore, IDisposable
+    public class BinaryStore :  IDisposable
     {
+        private readonly IBinaryWriteStream stream;
+        private readonly BinaryBufferPool bufferPool;
+        private long _flushOffset;
+        private readonly SemaphoreSlim _flushSemaphore = new SemaphoreSlim(1);
+        private const int HeaderLength = 5;
 
-        private readonly IWriteStream _writeStream;
-        private readonly IWriteStream _offsetWriteStream;
-        private readonly IStreamProvider _provider;
-        private long _currentOffset;
-        private long _lastFlushOffset;
-        private readonly long _start;
-        private readonly long _maxLength;
-        private readonly SemaphoreSlim _writeSemaphore = new(1);
-        private readonly Lock<long> _writeOffsetLock = new();
-
-        public BinaryStore(IStreamProvider provider)
-            : this(provider, 0, 0)
+        public BinaryStore(string path, BinaryBufferPool bufferPool)
+            : this(BinaryStream.ParallellFileStream(path), bufferPool)
         {
         }
 
-        private BinaryStore(IStreamProvider provider, long start, long maxLength)
+        public BinaryStore(IBinaryWriteStream stream, BinaryBufferPool bufferPool)
         {
-            _writeStream = provider.AcquireWriteStream();
+            this.stream = stream;
+            this.bufferPool = bufferPool;
 
-            _provider = provider;
-            _start = start;
-            _maxLength = maxLength;
-
-            if (_writeStream.Length > start) {
-                using var readStream = _provider.AcquireReadStream();
-                readStream.Seek(start, SeekOrigin.Begin);
-                var offsetBuffer = new byte[8];
-                readStream.Read(offsetBuffer, 0, offsetBuffer.Length);
-                _currentOffset = BitConverter.ToInt64(offsetBuffer, 0);
-            }
-            else {
-                _currentOffset = 8;
-                var offsetBuffer = BitConverter.GetBytes(_currentOffset);
-                _writeStream.Seek(start, SeekOrigin.Begin);
-                _writeStream.Write(offsetBuffer, 0, offsetBuffer.Length);
-
-                if (maxLength > 0) {
-                    var requiredFileSize = _start + _maxLength;
-                    var buffer = new byte[requiredFileSize - _writeStream.Length - 8];
-                    _writeStream.Write(buffer, 0, buffer.Length);
-                }
-            }
-
-            _lastFlushOffset = _currentOffset;
-            _writeStream.Seek(start + _currentOffset, SeekOrigin.Begin);
-
-            _offsetWriteStream = provider.AcquireWriteStream();
-            _offsetWriteStream.Seek(start, SeekOrigin.Begin);
+            _flushOffset = stream.Length;
         }
 
-        public bool IsEmpty { get { return _writeStream.Length <= (_start + 8); } }
+        public long Size => stream.Length;
 
-        public long Size => _currentOffset - 8;
-
-        public bool IsSpaceAvailable(long length)
+        public async Task WithWriteBufferAsync(long offset, int length, Func<BinaryWriteBuffer, Task> callback, CancellationToken cancellationToken = default)
         {
-            if (_maxLength <= 0) return true;
+            using var header = bufferPool.Acquire(HeaderLength);
+            header.Memory.Span[0] = 1;
+            if (!BitConverter.TryWriteBytes(header.Memory.Span[1..], length + HeaderLength)) {
+                throw new ArgumentException("Unexpected error when creating header");
+            }
 
-            return _currentOffset + length <= _maxLength;
+            await stream.WriteAsync(offset, header.Memory, cancellationToken);
+            using var buffer = bufferPool.AcquireWriteBuffer(stream, offset + HeaderLength, length);
+            await callback(buffer);
         }
 
-        private async Task UpdateOffsetAsync(CancellationToken cancellationToken = default)
+        public async ValueTask<long> WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
         {
-            var offsetBuffer = BitConverter.GetBytes(_currentOffset);
-            await _offsetWriteStream.WriteAsync(offsetBuffer, 0, offsetBuffer.Length, cancellationToken);
-            _offsetWriteStream.Seek(-8, SeekOrigin.Current);
+            var offset = stream.Length;
+            await WriteAsync(offset, data, cancellationToken);
+            return offset;
         }
 
-        public async Task WriteAsync(long storeOffset, byte[] data, CancellationToken cancellationToken = default)
+        public async ValueTask WriteAsync(long offset, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
         {
-            var handle = await _writeOffsetLock.EnterAsync(storeOffset, cancellationToken);
-            try {
-                using var offsetWriteStream = _provider.AcquireWriteStream();
-                offsetWriteStream.Seek(storeOffset, SeekOrigin.Begin);
-                await offsetWriteStream.WriteAsync(data, 0, data.Length, cancellationToken);
-                if (_lastFlushOffset > storeOffset)
-                    _lastFlushOffset = storeOffset - 1;
+            using var header = bufferPool.Acquire(HeaderLength);
+            header.Memory.Span[0] = 1;
+            if (!BitConverter.TryWriteBytes(header.Memory.Span[1..], data.Length + HeaderLength)) {
+                throw new ArgumentException("Unexpected error when creating header");
             }
-            finally {
-                await handle.ReleaseAsync();
-            }
-        }
-
-        public async Task<(bool IsSuccessful, long Offset)> TryWriteAsync(byte[] data, CancellationToken cancellationToken = default)
-        {
-            await _writeSemaphore.WaitAsync(cancellationToken: cancellationToken);
-            try {
-                if (!IsSpaceAvailable(data.Length)) {
-                    return (false, 0);
-                }
-
-                var storeOffset = _currentOffset;
-                await _writeStream.WriteAsync(data, 0, data.Length, cancellationToken);
-                _writeStream.Flush();
-                _currentOffset += data.Length;
-                await UpdateOffsetAsync(cancellationToken);
-                return (true, storeOffset);
-            }
-            finally {
-                _writeSemaphore.Release();
-            }
+            await stream.WriteAsync(offset, header.Memory, cancellationToken);
+            await stream.WriteAsync(offset + HeaderLength, data, cancellationToken);
+            if (_flushOffset > offset)
+                _flushOffset = offset - 1;
         }
 
         private async Task EnsureFlushedAsync(long offset, CancellationToken cancellationToken = default)
         {
-            if (offset < _lastFlushOffset) return;
+            if (offset < _flushOffset) return;
 
-            await _writeSemaphore.WaitAsync(cancellationToken: cancellationToken);
+            await _flushSemaphore.WaitAsync(cancellationToken: cancellationToken);
             try {
-                if (offset < _lastFlushOffset) return;
+                if (offset < _flushOffset) return;
 
-                _writeStream.FlushForced();
-                _lastFlushOffset = _currentOffset;
+                stream.Flush();
+                _flushOffset = stream.Length;
             }
             finally {
-                _writeSemaphore.Release();
+                _flushSemaphore.Release();
             }
         }
 
-        public async Task<(byte[] Data, long Offset)> ReadAllAsync(CancellationToken cancellationToken = default)
+        public async Task<BinaryReadBuffer> GetReadBufferAsync(long offset, CancellationToken cancellationToken = default)
         {
-            await EnsureFlushedAsync(_currentOffset, cancellationToken);
+            await EnsureFlushedAsync(offset, cancellationToken);
 
-            if (_currentOffset <= _start + 8) return (Array.Empty<byte>(), 0);
+            using var header = bufferPool.Acquire(HeaderLength);
+            await stream.ReadAsync(offset, header.Memory, cancellationToken);
 
-            var buffer = new byte[_currentOffset - _start - 8];
-            using (var readStream = _provider.AcquireReadStream()) {
-                readStream.Seek(_start + 8, SeekOrigin.Begin);
-                await readStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
-            }
-            return (buffer, 0);
-        }
+            var type = header.Memory.Span[0];
+            var size = BitConverter.ToInt32(header.Memory.Span[1..]);
 
-        public async Task<byte[]> ReadAsync(long storeOffset, long length, CancellationToken cancellationToken = default)
-        {
-            await EnsureFlushedAsync(storeOffset, cancellationToken);
+            var buffer = bufferPool.AcquireReadBuffer(stream, offset + HeaderLength, size - HeaderLength);
 
-            var buffer = new byte[length];
-            using (var readStream = _provider.AcquireReadStream()) {
-                readStream.Seek(storeOffset, SeekOrigin.Begin);
-                await readStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
-            }
             return buffer;
         }
 
-        public async Task TruncateToAsync(byte[] data, CancellationToken cancellationToken = default)
+        public async Task<Memory<byte>> ReadAsync(long offset, CancellationToken cancellationToken = default)
         {
-            await _writeSemaphore.WaitAsync(cancellationToken: cancellationToken);
-            try {
-                _currentOffset = 8 + data.Length;
-                var offsetBuffer = BitConverter.GetBytes(_currentOffset);
-                _writeStream.Seek(_start, SeekOrigin.Begin);
-                await _writeStream.WriteAsync(offsetBuffer, 0, offsetBuffer.Length, cancellationToken);
-                await _writeStream.WriteAsync(data, 0, data.Length, cancellationToken);
-                _lastFlushOffset = 8;
-            }
-            finally {
-                _writeSemaphore.Release();
-            }
+            await EnsureFlushedAsync(offset, cancellationToken);
+
+            using var header = bufferPool.Acquire(HeaderLength);
+            await stream.ReadAsync(offset, header.Memory, cancellationToken);
+
+            var type = header.Memory.Span[0];
+            var size = BitConverter.ToInt32(header.Memory.Span[1..]);
+
+            var buffer = new byte[size - HeaderLength];
+            await stream.ReadAsync(offset + HeaderLength, buffer, cancellationToken);
+            return buffer;
         }
 
         public void Dispose()
         {
-            _writeStream.Dispose();
-            _provider.Dispose();
-            _offsetWriteStream.Dispose();
+            stream.Dispose();
+            _flushSemaphore.Dispose();
         }
 
     }

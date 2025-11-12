@@ -21,10 +21,6 @@ namespace Aeter.Ratio.Reflection
         {
         }
 
-        protected MissingMemberException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-
         public static MissingMemberException MissingMethod(Type type, string methodName)
         {
             return new MissingMemberException($"Missing method '{methodName}' on type '{type.FullName}'");

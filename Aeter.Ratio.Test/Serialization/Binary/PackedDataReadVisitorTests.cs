@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Binary;
 using Aeter.Ratio.Serialization;
 using Aeter.Ratio.Serialization.PackedBinary;
 using Aeter.Ratio.Test.Fakes.Entities;
@@ -21,7 +22,8 @@ namespace Aeter.Ratio.Test.Serialization.Binary
         {
             var bytes = BinarySerializationTestContext.GetFilledDataBlockBlob();
             var stream = new MemoryStream(bytes);
-            var visitor = new PackedDataReadVisitor(stream);
+            using var buffer = BinaryBufferPool.Default.AcquireReadBuffer(stream);
+            var visitor = new PackedDataReadVisitor(buffer);
 
             var traveller = DataBlockHardCodedTraveller.Create();
 
@@ -37,7 +39,8 @@ namespace Aeter.Ratio.Test.Serialization.Binary
         {
             var bytes = BinarySerializationTestContext.GetFilledDataBlockBlob();
             var stream = new MemoryStream(bytes);
-            var visitor = new PackedDataReadVisitor(stream);
+            using var buffer = BinaryBufferPool.Default.AcquireReadBuffer(stream);
+            var visitor = new PackedDataReadVisitor(buffer);
 
             var traveller = BinarySerializationTestContext.Provider.Get<DataBlock>();
 

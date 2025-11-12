@@ -2,91 +2,61 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
+using System.Buffers.Binary;
 namespace Aeter.Ratio.Binary.Converters
 {
     public class BinaryConverterDecimal : IBinaryConverter<Decimal>
     {
+        private const int Size = 16;
 
-        /// <summary>
-        /// Equivalent to internal Decimal.GetBytes method
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="buffer"></param>
-        private static void GetBytes(decimal value, Span<byte> buffer, int o)
+        private static Decimal ToDecimal(ReadOnlySpan<byte> buffer, int start = 0)
+        {
+            var lo = BinaryPrimitives.ReadInt32LittleEndian(buffer.Slice(start, 4));
+            var mid = BinaryPrimitives.ReadInt32LittleEndian(buffer.Slice(start + 4, 4));
+            var hi = BinaryPrimitives.ReadInt32LittleEndian(buffer.Slice(start + 8, 4));
+            var flags = BinaryPrimitives.ReadInt32LittleEndian(buffer.Slice(start + 12, 4));
+            return new Decimal(new[] { lo, mid, hi, flags });
+        }
+
+        private static void WriteBytes(Decimal value, Span<byte> buffer, int offset = 0)
         {
             var bits = Decimal.GetBits(value);
-            var lo = bits[0];
-            var mid = bits[1];
-            var hi = bits[2];
-            var flags = bits[3];
-
-            buffer[o] = (byte)lo;
-            buffer[o+1] = (byte)(lo >> 8);
-            buffer[o+2] = (byte)(lo >> 16);
-            buffer[o+3] = (byte)(lo >> 24);
-            buffer[o+4] = (byte)mid;
-            buffer[o+5] = (byte)(mid >> 8);
-            buffer[o+6] = (byte)(mid >> 16);
-            buffer[o+7] = (byte)(mid >> 24);
-            buffer[o+8] = (byte)hi;
-            buffer[o+9] = (byte)(hi >> 8);
-            buffer[o+10] = (byte)(hi >> 16);
-            buffer[o+11] = (byte)(hi >> 24);
-            buffer[o+12] = (byte)flags;
-            buffer[o+13] = (byte)(flags >> 8);
-            buffer[o+14] = (byte)(flags >> 16);
-            buffer[o+15] = (byte)(flags >> 24);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(offset, 4), bits[0]);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(offset + 4, 4), bits[1]);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(offset + 8, 4), bits[2]);
+            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(offset + 12, 4), bits[3]);
         }
 
-        /// <summary>
-        /// Equivalent to internal Decimal.ToDecimal method, except startIndex parameter
-        /// </summary>
-        /// <param name="buffer"></param>
-        /// <returns></returns>
-        private static decimal ToDecimal(ReadOnlySpan<byte> buffer, int s)
+        public Decimal Convert(ReadOnlySpan<byte> value)
         {
-            int num = (int)buffer[s] | (int)buffer[s + 1] << 8 | (int)buffer[s + 2] << 16 | (int)buffer[s + 3] << 24;
-            int num2 = (int)buffer[s + 4] | (int)buffer[s + 5] << 8 | (int)buffer[s + 6] << 16 | (int)buffer[s + 7] << 24;
-            int num3 = (int)buffer[s + 8] | (int)buffer[s + 9] << 8 | (int)buffer[s + 10] << 16 | (int)buffer[s + 11] << 24;
-            int num4 = (int)buffer[s + 12] | (int)buffer[s + 13] << 8 | (int)buffer[s + 14] << 16 | (int)buffer[s + 15] << 24;
-            return new Decimal(new int[] { num, num2, num3, num4 });
-        }
-
-        public Decimal Convert(Span<byte> value)
-        {
-            return Convert(value, 0, value.Length);
-        }
-
-        public Decimal Convert(Span<byte> value, int startIndex)
-        {
-            return ToDecimal(value, startIndex);
-        }
-
-        public Decimal Convert(Span<byte> value, int startIndex, int length)
-        {
-            return Convert(value, startIndex);
+            if (value.Length < Size)
+                throw new ArgumentException("The span does not contain enough data.", nameof(value));
+            return ToDecimal(value);
         }
 
         public byte[] Convert(Decimal value)
         {
-            var result = new byte[16];
-            GetBytes(value, result, 0);
+            var result = new byte[Size];
+            WriteBytes(value, result);
             return result;
         }
 
-        object IBinaryConverter.Convert(Span<byte> value)
+        public void Convert(Decimal value, Span<byte> buffer)
         {
-            return Convert(value, 0, value.Length);
+            if (buffer.Length < Size)
+                throw new BufferOverflowException("The buffer can not contain the value");
+            WriteBytes(value, buffer);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
+        public void Convert(Decimal value, BinaryWriteBuffer writeBuffer)
         {
-            return Convert(value, startIndex, value.Length - startIndex);
+            var bytes = Convert(value);
+            writeBuffer.Write(bytes);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
+        object IBinaryConverter.Convert(ReadOnlySpan<byte> value)
         {
-            return Convert(value, startIndex, length);
+            return Convert(value);
         }
 
         byte[] IBinaryConverter.Convert(object value)
@@ -94,33 +64,9 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((Decimal)value);
         }
 
-        public void Convert(Decimal value, Span<byte> buffer)
-        {
-            Convert(value, buffer, 0);
-        }
-
-        public void Convert(Decimal value, Span<byte> buffer, int offset)
-        {
-            if (buffer.Length < offset + 16)
-                throw new BufferOverflowException("The buffer can not contain the value");
-
-            GetBytes(value, buffer, offset);
-        }
-
         void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
-            Convert((Decimal)value, buffer, 0);
-        }
-
-        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
-        {
-            Convert((Decimal)value, buffer, offset);
-        }
-
-        public void Convert(Decimal value, BinaryWriteBuffer writeBuffer)
-        {
-            var bytes = Convert(value);
-            writeBuffer.Write(bytes);
+            Convert((Decimal)value, buffer);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)

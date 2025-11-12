@@ -6,39 +6,35 @@ namespace Aeter.Ratio.Binary.Converters
 {
     public class BinaryConverterBoolean : IBinaryConverter<Boolean>
     {
-        public Boolean Convert(Span<byte> value)
-        {
-            return Convert(value, 0, value.Length);
-        }
+        private const int Size = sizeof(byte);
 
-        public Boolean Convert(Span<byte> value, int startIndex)
+        public Boolean Convert(ReadOnlySpan<byte> value)
         {
-            return value[startIndex] != 0;
-        }
-
-        public Boolean Convert(Span<byte> value, int startIndex, int length)
-        {
-            return Convert(value, startIndex);
+            if (value.Length < Size)
+                throw new ArgumentException("The span does not contain enough data.", nameof(value));
+            return value[0] != 0;
         }
 
         public byte[] Convert(Boolean value)
         {
-            return BitConverter.GetBytes(value);
+            return new[] { value ? (byte)1 : (byte)0 };
         }
 
-        object IBinaryConverter.Convert(Span<byte> value)
+        public void Convert(Boolean value, Span<byte> buffer)
         {
-            return Convert(value, 0, value.Length);
+            if (buffer.Length < Size)
+                throw new BufferOverflowException("The buffer can not contain the value");
+            buffer[0] = value ? (byte)1 : (byte)0;
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
+        public void Convert(Boolean value, BinaryWriteBuffer writeBuffer)
         {
-            return Convert(value, startIndex, value.Length - startIndex);
+            writeBuffer.WriteByte(value ? (byte)1 : (byte)0);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
+        object IBinaryConverter.Convert(ReadOnlySpan<byte> value)
         {
-            return Convert(value, startIndex, length);
+            return Convert(value);
         }
 
         byte[] IBinaryConverter.Convert(object value)
@@ -46,37 +42,14 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((Boolean)value);
         }
 
-        public void Convert(Boolean value, Span<byte> buffer)
-        {
-            Convert(value, buffer, 0);
-        }
-
-        public void Convert(Boolean value, Span<byte> buffer, int offset)
-        {
-            if (buffer.Length < offset + 1)
-                throw new BufferOverflowException("The buffer can not contain the value");
-            buffer[offset] = value ? (byte) 1 : (byte) 0;
-        }
-
         void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
-            Convert((Boolean)value, buffer, 0);
-        }
-
-        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
-        {
-            Convert((Boolean)value, buffer, offset);
-        }
-
-        public void Convert(bool value, BinaryWriteBuffer writeBuffer)
-        {
-            var bytes = Convert(value);
-            writeBuffer.Write(bytes);
+            Convert((Boolean)value, buffer);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)
         {
-            Convert((Boolean) value, writeBuffer);
+            Convert((Boolean)value, writeBuffer);
         }
     }
 }

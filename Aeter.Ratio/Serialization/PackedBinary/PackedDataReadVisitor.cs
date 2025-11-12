@@ -8,18 +8,11 @@ using Aeter.Ratio.IO;
 
 namespace Aeter.Ratio.Serialization.PackedBinary
 {
-    public class PackedDataReadVisitor : IReadVisitor
+    public class PackedDataReadVisitor(BinaryReadBuffer buffer) : IReadVisitor
     {
-        private readonly Stream _stream;
-        private readonly BinaryDataReader _reader;
+        private readonly BinaryDataReader reader = new(buffer);
         private UInt32 _nextIndex;
         private bool _endOfLevel;
-        
-        public PackedDataReadVisitor(Stream stream)
-        {
-            _stream = stream;
-            _reader = new BinaryDataReader(stream);
-        }
 
         private static bool SkipDataIndex(uint dataIndex, uint index)
         {
@@ -36,15 +29,15 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 if (nextIndex == index) return true;
             }
             UInt32 dataIndex;
-            while (SkipDataIndex(dataIndex = _reader.ReadZ(), index)) {
-                var byteLength = _reader.ReadByte();
+            while (SkipDataIndex(dataIndex = reader.ReadZ(), index)) {
+                var byteLength = reader.ReadByte();
                 if (byteLength == BinaryZPacker.Null) continue;
 
                 if (byteLength != BinaryZPacker.VariabelLength)
-                    _reader.Skip(byteLength);
+                    reader.Skip(byteLength);
                 else {
-                    var length = _reader.ReadUInt32();
-                    _reader.Skip(length);
+                    var length = reader.ReadUInt32();
+                    reader.Skip(length);
                 }
             }
             if (dataIndex == 0) {
@@ -63,7 +56,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             if (args.Index > 0 && !MoveToIndex(args.Index))
                 return ValueState.NotFound;
 
-            var byteLength = _reader.ReadByte();
+            var byteLength = reader.ReadByte();
             if (byteLength == BinaryZPacker.Null) return ValueState.Null;
             if (byteLength != BinaryZPacker.VariabelLength)
                 throw new UnexpectedLengthException(args, byteLength);
@@ -72,7 +65,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 return ValueState.Found;
             }
 
-            _reader.Skip(4);
+            reader.Skip(4);
 
             return ValueState.Found;
         }
@@ -98,7 +91,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
@@ -106,7 +99,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             if (length != BinaryInformation.Byte.FixedLength)
                 throw new UnexpectedLengthException(args, length);
 
-            value = (Byte)_stream.ReadByte();
+            value = (Byte)buffer.ReadByte();
             return true;
         }
 
@@ -116,12 +109,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = (Int16)BinaryPV64Packer.UnpackS(_stream, length);
+            value = (Int16)BinaryPV64Packer.UnpackS(buffer, length);
             return true;
         }
 
@@ -131,12 +124,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = (Int32)BinaryPV64Packer.UnpackS(_stream, length);
+            value = (Int32)BinaryPV64Packer.UnpackS(buffer, length);
             return true;
         }
 
@@ -146,12 +139,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = BinaryPV64Packer.UnpackS(_stream, length);
+            value = BinaryPV64Packer.UnpackS(buffer, length);
             return true;
         }
 
@@ -161,12 +154,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = (UInt16)BinaryPV64Packer.UnpackU(_stream, length);
+            value = (UInt16)BinaryPV64Packer.UnpackU(buffer, length);
             return true;
         }
 
@@ -176,12 +169,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = (UInt32)BinaryPV64Packer.UnpackU(_stream, length);
+            value = (UInt32)BinaryPV64Packer.UnpackU(buffer, length);
             return true;
         }
 
@@ -191,12 +184,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = BinaryPV64Packer.UnpackU(_stream, length);
+            value = BinaryPV64Packer.UnpackU(buffer, length);
             return true;
         }
 
@@ -206,7 +199,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
@@ -214,7 +207,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             if (length != BinaryInformation.Boolean.FixedLength)
                 throw new UnexpectedLengthException(args, length);
 
-            value = _reader.ReadBoolean();
+            value = reader.ReadBoolean();
             return true;
         }
 
@@ -224,7 +217,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
@@ -232,7 +225,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             if (length != BinaryInformation.Single.FixedLength)
                 throw new UnexpectedLengthException(args, length);
 
-            value = _reader.ReadSingle();
+            value = reader.ReadSingle();
             return true;
         }
 
@@ -242,7 +235,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
@@ -250,7 +243,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             if (length != BinaryInformation.Double.FixedLength)
                 throw new UnexpectedLengthException(args, length);
 
-            value = _reader.ReadDouble();
+            value = reader.ReadDouble();
             return true;
         }
 
@@ -260,7 +253,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
@@ -268,7 +261,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             if (length != BinaryInformation.Decimal.FixedLength)
                 throw new UnexpectedLengthException(args, length);
 
-            value = _reader.ReadDecimal();
+            value = reader.ReadDecimal();
             return true;
         }
 
@@ -278,12 +271,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = new TimeSpan(BinaryPV64Packer.UnpackS(_stream, length));
+            value = new TimeSpan(BinaryPV64Packer.UnpackS(buffer, length));
             return true;
         }
 
@@ -293,12 +286,12 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
-            value = new DateTime(BinaryPV64Packer.UnpackS(_stream, length), DateTimeKind.Utc).ToLocalTime();
+            value = new DateTime(BinaryPV64Packer.UnpackS(buffer, length), DateTimeKind.Utc).ToLocalTime();
             return true;
         }
 
@@ -308,15 +301,15 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
 
-            var lengthToRead = length == BinaryZPacker.VariabelLength ? _reader.ReadV() : length;
+            var lengthToRead = length == BinaryZPacker.VariabelLength ? reader.ReadV() : length;
 
-            value = _reader.ReadString(lengthToRead);
+            value = reader.ReadString(lengthToRead);
             return true;
         }
 
@@ -326,7 +319,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
@@ -334,7 +327,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             if (length != BinaryInformation.Guid.FixedLength)
                 throw new UnexpectedLengthException(args, length);
 
-            value = _reader.ReadGuid();
+            value = reader.ReadGuid();
             return true;
         }
 
@@ -344,15 +337,15 @@ namespace Aeter.Ratio.Serialization.PackedBinary
                 value = null;
                 return false;
             }
-            var length = _reader.ReadByte();
+            var length = reader.ReadByte();
             if (length == BinaryZPacker.Null) {
                 value = null;
                 return true;
             }
 
-            var lengthToRead = length == BinaryZPacker.VariabelLength ? _reader.ReadV() : length;
+            var lengthToRead = length == BinaryZPacker.VariabelLength ? reader.ReadV() : length;
 
-            value = _reader.ReadBlob(lengthToRead);
+            value = reader.ReadBlob(lengthToRead);
             return true;
         }
     }

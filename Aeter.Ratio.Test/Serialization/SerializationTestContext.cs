@@ -15,11 +15,11 @@ namespace Aeter.Ratio.Test.Serialization
         {
         }
 
-        protected abstract ITypedSerializer<T> CreateSerializer<T>();
+        protected abstract ISerializer CreateSerializer();
 
         public byte[] Serialize<T>(T graph)
         {
-            var serializer = CreateSerializer<T>();
+            var serializer = CreateSerializer();
             using (var stream = new MemoryStream()) {
                 serializer.Serialize(stream, graph);
                 return stream.ToArray();
@@ -28,11 +28,11 @@ namespace Aeter.Ratio.Test.Serialization
 
         public T SerializeAndDeserialize<T>(T graph)
         {
-            var serializer = CreateSerializer<T>();
+            var serializer = CreateSerializer();
             using (var stream = new MemoryStream()) {
                 serializer.Serialize(stream, graph);
                 stream.Seek(0, SeekOrigin.Begin);
-                return serializer.Deserialize(stream);
+                return serializer.Deserialize<T>(stream);
             }
         }
 

@@ -2,11 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Binary;
-using System.IO;
+using Aeter.Ratio.IO;
+using System;
 
 namespace Aeter.Ratio.Serialization.PackedBinary
 {
-    public class PackedDataSerializer<T> : ITypedSerializer<T>
+    public class PackedDataSerializer : ISerializer
     {
         private readonly BinaryBufferPool _bufferPool;
         private readonly SerializationEngine _engine;
@@ -21,28 +22,32 @@ namespace Aeter.Ratio.Serialization.PackedBinary
             _engine = new SerializationEngine();
         }
 
-        void ITypedSerializer.Serialize(Stream stream, object graph)
+        public void Serialize(IBinaryWriteStream stream, object graph)
         {
-            Serialize(stream, (T)graph);
+            using var buffer = _bufferPool.AcquireWriteBuffer(stream);
+            var visitor = new PackedDataWriteVisitor(buffer);
+            _engine.Serialize(visitor, graph);
         }
 
-        public T Deserialize(Stream stream)
+        public T Deserialize<T>(IBinaryReadStream stream)
         {
-            var visitor = new PackedDataReadVisitor(stream);
+            using var buffer = _bufferPool.AcquireReadBuffer(stream);
+            var visitor = new PackedDataReadVisitor(buffer);
             return _engine.Deserialize<T>(visitor);
         }
 
-        public void Serialize(Stream stream, T graph)
+        public void Serialize<T>(IBinaryWriteStream stream, T graph)
         {
-            using (var buffer = _bufferPool.AcquireWriteBuffer(stream)) {
-                var visitor = new PackedDataWriteVisitor(buffer);
-                _engine.Serialize(visitor, graph);
-            }
+            using var buffer = _bufferPool.AcquireWriteBuffer(stream);
+            var visitor = new PackedDataWriteVisitor(buffer);
+            _engine.Serialize(visitor, graph);
         }
 
-        object? ITypedSerializer.Deserialize(Stream stream)
+        public object? Deserialize(Type type, IBinaryReadStream stream)
         {
-            return Deserialize(stream);
+            using var buffer = _bufferPool.AcquireReadBuffer(stream);
+            var visitor = new PackedDataReadVisitor(buffer);
+            return _engine.Deserialize(visitor, type);
         }
     }
 }

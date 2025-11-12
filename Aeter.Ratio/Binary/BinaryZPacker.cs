@@ -20,7 +20,7 @@ namespace Aeter.Ratio.Binary
     {
         public static void Pack(Stream stream, Int32 value)
         {
-            
+
         }
     }
 
@@ -131,6 +131,35 @@ namespace Aeter.Ratio.Binary
 
                 return Unpack(stream);
             }
+        }
+
+        /// <summary>
+        /// Unpacks the value which was packed with <see cref="PackZ"/>
+        /// </summary>
+        /// <param name="buffer">The buffer containing the value</param>
+        /// <returns>The unpacked value</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt32 Unpack(BinaryReadBuffer buffer)
+        {
+            var b = (UInt32)buffer.ReadByte();
+            var length = (byte)(b << 30 >> 30);
+
+            var result = b >> 2;
+
+            if (length == 0) return result;
+            b = (UInt32)buffer.ReadByte();
+            var part = b << 6;
+            result |= part;
+
+            if (length == 1) return result;
+            b = (UInt32)buffer.ReadByte();
+            part = b << 14;
+            result |= part;
+
+            if (length == 2) return result;
+            b = (UInt32)buffer.ReadByte();
+            part = b << 22;
+            return result | part;
         }
 
         /// <summary>

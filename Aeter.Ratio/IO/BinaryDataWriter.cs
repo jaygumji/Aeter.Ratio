@@ -15,12 +15,12 @@ namespace Aeter.Ratio.IO
         private readonly Encoding _encoding;
 
         public BinaryDataWriter(Stream stream, Encoding encoding)
-            : this(new BinaryWriteBuffer(8024, stream), encoding)
+            : this(new BinaryWriteBuffer(8024, BinaryStream.Passthrough(stream)), encoding)
         {
         }
 
         public BinaryDataWriter(Stream stream)
-            : this(new BinaryWriteBuffer(8024, stream), Encoding.UTF8)
+            : this(new BinaryWriteBuffer(8024, BinaryStream.Passthrough(stream)), Encoding.UTF8)
         {
         }
 
@@ -165,7 +165,7 @@ namespace Aeter.Ratio.IO
         {
             Write(BinaryInformation.Guid, value);
         }
-        
+
         public void Write(byte[] value)
         {
             if (value == null)

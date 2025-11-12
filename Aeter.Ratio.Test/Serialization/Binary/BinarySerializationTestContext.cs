@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Binary;
 using Aeter.Ratio.DependencyInjection;
+using Aeter.Ratio.IO;
 using Aeter.Ratio.Reflection;
 using Aeter.Ratio.Serialization;
 using Aeter.Ratio.Serialization.PackedBinary;
@@ -30,15 +31,15 @@ namespace Aeter.Ratio.Test.Serialization.Binary
             return traveller;
         }
 
-        protected override ITypedSerializer<T> CreateSerializer<T>()
+        protected override ISerializer CreateSerializer()
         {
-            return new PackedDataSerializer<T>();
+            return new PackedDataSerializer();
         }
 
         public byte[] Pack<T>(T graph)
         {
             var stream = new MemoryStream();
-            using (var buffer = new BinaryWriteBuffer(1024, stream)) {
+            using (var buffer = new BinaryWriteBuffer(1024, BinaryStream.MemoryStream(stream))) {
                 var visitor = new PackedDataWriteVisitor(buffer);
 
                 var traveller = CreateTraveller<T>();
@@ -60,7 +61,7 @@ namespace Aeter.Ratio.Test.Serialization.Binary
         public static byte[] GetFilledDataBlockBlob()
         {
             var stream = new MemoryStream();
-            using (var buffer = new BinaryWriteBuffer(1024, stream)) {
+            using (var buffer = new BinaryWriteBuffer(1024, BinaryStream.MemoryStream(stream))) {
                 var visitor = new PackedDataWriteVisitor(buffer);
                 var traveller = DataBlockHardCodedTraveller.Create();
                 traveller.Travel(visitor, DataBlock.Filled());

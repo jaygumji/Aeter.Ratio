@@ -7,20 +7,12 @@ namespace Aeter.Ratio.Binary.Converters
 {
     public class BinaryConverterDouble : IBinaryConverter<Double>
     {
-        public Double Convert(Span<byte> value)
-        {
-            return Convert(value, 0, value.Length);
-        }
+        private const int Size = sizeof(long);
 
-        public Double Convert(Span<byte> value, int startIndex)
+        public Double Convert(ReadOnlySpan<byte> value)
         {
-            var bits = BinaryPrimitives.ReadInt64LittleEndian(value.Slice(startIndex));
+            var bits = BinaryPrimitives.ReadInt64LittleEndian(value);
             return BitConverter.Int64BitsToDouble(bits);
-        }
-
-        public Double Convert(Span<byte> value, int startIndex, int length)
-        {
-            return Convert(value, startIndex);
         }
 
         public byte[] Convert(Double value)
@@ -28,19 +20,23 @@ namespace Aeter.Ratio.Binary.Converters
             return BitConverter.GetBytes(value);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value)
+        public void Convert(Double value, Span<byte> buffer)
         {
-            return Convert(value, 0, value.Length);
+            if (buffer.Length < Size)
+                throw new BufferOverflowException("The buffer can not contain the value");
+            var bits = BitConverter.DoubleToInt64Bits(value);
+            BinaryPrimitives.WriteInt64LittleEndian(buffer, bits);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
+        public void Convert(Double value, BinaryWriteBuffer writeBuffer)
         {
-            return Convert(value, startIndex, value.Length - startIndex);
+            var bytes = Convert(value);
+            writeBuffer.Write(bytes);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
+        object IBinaryConverter.Convert(ReadOnlySpan<byte> value)
         {
-            return Convert(value, startIndex, length);
+            return Convert(value);
         }
 
         byte[] IBinaryConverter.Convert(object value)
@@ -48,33 +44,9 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((Double)value);
         }
 
-        public void Convert(Double value, Span<byte> buffer)
-        {
-            Convert(value, buffer, 0);
-        }
-
-        public void Convert(Double value, Span<byte> buffer, int offset)
-        {
-            if (buffer.Length < offset + 8)
-                throw new BufferOverflowException("The buffer can not contain the value");
-            var bits = BitConverter.DoubleToInt64Bits(value);
-            BinaryPrimitives.WriteInt64LittleEndian(buffer.Slice(offset), bits);
-        }
-
         void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
-            Convert((Double)value, buffer, 0);
-        }
-
-        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
-        {
-            Convert((Double)value, buffer, offset);
-        }
-
-        public void Convert(Double value, BinaryWriteBuffer writeBuffer)
-        {
-            var bytes = Convert(value);
-            writeBuffer.Write(bytes);
+            Convert((Double)value, buffer);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)

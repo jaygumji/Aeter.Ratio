@@ -1,10 +1,8 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.IO;
 using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary
 {
@@ -14,36 +12,46 @@ namespace Aeter.Ratio.Binary
         private BinaryBufferPool.BinaryMemoryHandle _handle;
         private bool _isDisposed;
 
-        protected Stream Stream { get; }
+        public Memory<byte> Buffer { get; }
+        private IBinaryStream Stream { get; }
+        private long streamOffset;
+        private int streamLength;
+        private long streamPosition;
+
         protected Memory<byte> Memory => _handle.Memory;
         public Span<byte> Span => Memory.Span;
         public int Position { get; protected set; }
         protected int Size => Memory.Length;
 
-        protected ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
-            => Stream.ReadAsync(destination, cancellationToken);
-
-        protected int Read(Memory<byte> destination)
-            => Stream.Read(destination.Span);
-
-        protected ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
-            => Stream.WriteAsync(source, cancellationToken);
-
-        protected void Write(ReadOnlyMemory<byte> source)
-            => Stream.Write(source.Span);
-
-        public BinaryBuffer(Memory<byte> buffer, Stream stream)
+        public BinaryBuffer(Memory<byte> buffer, IBinaryStream stream, long streamOffset, int streamLength)
         {
+            Buffer = buffer;
             Stream = stream;
+            this.streamOffset = streamOffset;
+            this.streamLength = streamLength;
+            streamPosition = streamOffset;
             Position = 0;
             _pool = BinaryMemoryProvider.Single(buffer, out _handle);
         }
-        public BinaryBuffer(BinaryBufferPool pool, BinaryBufferPool.BinaryMemoryHandle handle, Stream stream)
+        public BinaryBuffer(BinaryBufferPool pool, BinaryBufferPool.BinaryMemoryHandle handle, IBinaryStream stream, long streamOffset, int streamLength)
         {
             Stream = stream;
+            this.streamOffset = streamOffset;
+            this.streamLength = streamLength;
+            streamPosition = streamOffset;
             _pool = pool;
             Position = 0;
             _handle = handle;
+        }
+
+        protected (long Offset, int Length) GetAndAdvanceStreamPosition(int length)
+        {
+            var position = streamPosition;
+            var streamLengthLeft = streamLength - (streamPosition - streamOffset);
+            var actLength = length > streamLengthLeft ? streamLengthLeft : length;
+
+            streamPosition += actLength;
+            return (position, (int)actLength);
         }
 
         protected void Expand(int length, int keepPosition, int keepLength)

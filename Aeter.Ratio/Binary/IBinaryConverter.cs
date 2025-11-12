@@ -7,23 +7,17 @@ namespace Aeter.Ratio.Binary
 {
     public interface IBinaryConverter
     {
-        object Convert(Span<byte> value);
-        object Convert(Span<byte> value, int startIndex);
-        object Convert(Span<byte> value, int startIndex, int length);
+        object Convert(ReadOnlySpan<byte> value);
         byte[] Convert(object value);
         void Convert(object value, Span<byte> buffer);
-        void Convert(object value, Span<byte> buffer, int offset);
         void Convert(object value, BinaryWriteBuffer writeBuffer);
     }
 
     public interface IBinaryConverter<T> : IBinaryConverter
     {
-        new T Convert(Span<byte> value);
-        new T Convert(Span<byte> value, int startIndex);
-        new T Convert(Span<byte> value, int startIndex, int length);
+        new T Convert(ReadOnlySpan<byte> value);
         byte[] Convert(T value);
         void Convert(T value, Span<byte> buffer);
-        void Convert(T value, Span<byte> buffer, int offset);
         void Convert(T value, BinaryWriteBuffer writeBuffer);
     }
 }

@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.IO;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,16 +14,18 @@ namespace Aeter.Ratio.Binary
     public class BinaryWriteBuffer : BinaryBuffer
     {
         private readonly List<BinaryBufferReservation> _reservations = new List<BinaryBufferReservation>();
-
+        private readonly IBinaryWriteStream stream;
         private BinaryBufferReservation? _firstReservation;
 
-        public BinaryWriteBuffer(BinaryBufferPool pool, BinaryBufferPool.BinaryMemoryHandle handle, Stream stream)
-            : base(pool, handle, stream)
+        public BinaryWriteBuffer(BinaryBufferPool pool, BinaryBufferPool.BinaryMemoryHandle handle, IBinaryWriteStream stream, long streamOffset = 0, int streamLength = int.MaxValue)
+            : base(pool, handle, stream, streamOffset, streamLength)
         {
+            this.stream = stream;
         }
 
-        public BinaryWriteBuffer(int size, Stream stream) : base(new byte[size], stream)
+        public BinaryWriteBuffer(int size, IBinaryWriteStream stream, long streamOffset = 0, int streamLength = int.MaxValue) : base(new byte[size], stream, streamOffset, streamLength)
         {
+            this.stream = stream;
         }
 
         private bool HasReservations => _firstReservation != null;
@@ -63,7 +66,11 @@ namespace Aeter.Ratio.Binary
 
             if (Position <= 0) return;
 
-            Write(Memory[..Position]);
+            var (streamOffset, streamLength) = GetAndAdvanceStreamPosition(Position);
+            if (streamLength < Position) {
+                throw new EndOfStreamException();
+            }
+            stream.Write(streamOffset, Memory.Span[..Position]);
             Position = 0;
         }
 
@@ -73,7 +80,11 @@ namespace Aeter.Ratio.Binary
 
             if (Position <= 0) return;
 
-            await WriteAsync(Memory[..Position], cancellationToken);
+            var (streamOffset, streamLength) = GetAndAdvanceStreamPosition(Position);
+            if (streamLength < Position) {
+                throw new EndOfStreamException();
+            }
+            await stream.WriteAsync(streamOffset, Memory[..Position], cancellationToken);
             Position = 0;
         }
 
@@ -222,9 +233,13 @@ namespace Aeter.Ratio.Binary
         protected override void OnDispose()
         {
             if (Position <= 0) return;
-            // Flush unwritten data to stream
-            Write(Memory[..Position]);
-        }
 
+            // Flush unwritten data to stream
+            var (streamOffset, streamLength) = GetAndAdvanceStreamPosition(Position);
+            if (streamLength < Position) {
+                throw new EndOfStreamException();
+            }
+            stream.Write(streamOffset, Memory.Span[..Position]);
+        }
     }
 }

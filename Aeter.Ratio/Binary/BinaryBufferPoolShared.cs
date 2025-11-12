@@ -8,7 +8,7 @@ namespace Aeter.Ratio.Binary
 {
     public class BinaryBufferPoolShared : BinaryBufferPool
     {
-        public BinaryBufferPoolShared() : base(1024)
+        public BinaryBufferPoolShared() : base(4096)
         {
         }
 

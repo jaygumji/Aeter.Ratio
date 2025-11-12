@@ -107,6 +107,53 @@ namespace Aeter.Ratio.Binary
         /// <summary>
         /// Unpacks a value
         /// </summary>
+        /// <param name="buffer">The buffer where we read the value from</param>
+        /// <param name="length"></param>
+        /// <returns>The unpacked value</returns>
+        public static UInt64 UnpackU(BinaryReadBuffer buffer, byte length)
+        {
+            var b = (UInt64)buffer.ReadByte();
+            var result = b;
+
+            if (length == 1) return result;
+            b = (UInt64)buffer.ReadByte();
+            var part = b << 8;
+            result |= part;
+
+            if (length == 2) return result;
+            b = (UInt64)buffer.ReadByte();
+            part = b << 16;
+            result |= part;
+
+            if (length == 3) return result;
+            b = (UInt64)buffer.ReadByte();
+            part = b << 24;
+            result |= part;
+
+            if (length == 4) return result;
+            b = (UInt64)buffer.ReadByte();
+            part = b << 32;
+            result |= part;
+
+            if (length == 5) return result;
+            b = (UInt64)buffer.ReadByte();
+            part = b << 40;
+            result |= part;
+
+            if (length == 6) return result;
+            b = (UInt64)buffer.ReadByte();
+            part = b << 48;
+            result |= part;
+
+            if (length == 7) return result;
+            b = (UInt64)buffer.ReadByte();
+            part = b << 56;
+            return result | part;
+        }
+
+        /// <summary>
+        /// Unpacks a value
+        /// </summary>
         /// <param name="stream">The stream where we read the value from</param>
         /// <param name="length"></param>
         /// <returns>The unpacked value</returns>
@@ -220,6 +267,62 @@ namespace Aeter.Ratio.Binary
         /// <param name="stream">The stream where we read the value from</param>
         /// <param name="length"></param>
         /// <returns>The unpacked value</returns>
+        public static Int64 UnpackS(BinaryReadBuffer stream, byte length)
+        {
+            var b = (UInt64)stream.ReadByte();
+            var isNegative = (b << 63 >> 63) == 1;
+
+            var result = b >> 1;
+
+            if (length == 1) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            var part = b << 7;
+            result |= part;
+
+            if (length == 2) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            part = b << 15;
+            result |= part;
+
+            if (length == 3) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            part = b << 23;
+            result |= part;
+
+            if (length == 4) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            part = b << 31;
+            result |= part;
+
+            if (length == 5) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            part = b << 39;
+            result |= part;
+
+            if (length == 6) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            part = b << 47;
+            result |= part;
+
+            if (length == 7) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            part = b << 55;
+            result |= part;
+
+            if (length == 8) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+            b = (UInt64)stream.ReadByte();
+            part = b << 63;
+            result |= part;
+
+            return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
+        }
+
+        /// <summary>
+        /// Unpacks a value
+        /// </summary>
+        /// <param name="stream">The stream where we read the value from</param>
+        /// <param name="length"></param>
+        /// <returns>The unpacked value</returns>
         public static Int64 UnpackS(Stream stream, byte length)
         {
             var b = (UInt64)stream.ReadByte();
@@ -227,42 +330,42 @@ namespace Aeter.Ratio.Binary
 
             var result = b >> 1;
 
-            if (length == 1) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 1) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             var part = b << 7;
             result |= part;
 
-            if (length == 2) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 2) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             part = b << 15;
             result |= part;
 
-            if (length == 3) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 3) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             part = b << 23;
             result |= part;
 
-            if (length == 4) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 4) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             part = b << 31;
             result |= part;
 
-            if (length == 5) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 5) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             part = b << 39;
             result |= part;
 
-            if (length == 6) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 6) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             part = b << 47;
             result |= part;
 
-            if (length == 7) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 7) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             part = b << 55;
             result |= part;
 
-            if (length == 8) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result; ;
+            if (length == 8) return isNegative ? (Int64)(result ^ UInt64.MaxValue) : (Int64)result;
             b = (UInt64)stream.ReadByte();
             part = b << 63;
             result |= part;

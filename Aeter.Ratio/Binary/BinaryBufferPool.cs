@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.IO;
 using System;
 using System.IO;
 
@@ -25,23 +26,47 @@ namespace Aeter.Ratio.Binary
         /// Acquires the buffer for the requested stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
+        /// <param name="streamOffset">The offset in stream where we start writing</param>
+        /// <param name="streamLength">The length of data in stream we are allowed to write to</param>
         /// <returns>BinaryBuffer.</returns>
-        public BinaryWriteBuffer AcquireWriteBuffer(Stream stream)
+        public BinaryWriteBuffer AcquireWriteBuffer(IBinaryWriteStream stream, long streamOffset = 0, int streamLength = int.MaxValue)
         {
             var handle = Acquire(MinSize);
-            return new BinaryWriteBuffer(this, handle, stream);
+            return new BinaryWriteBuffer(this, handle, stream, streamOffset, streamLength);
         }
 
         /// <summary>
         /// Acquires the buffer for the requested stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
+        /// <param name="streamOffset">The offset in stream where we start writing</param>
+        /// <param name="streamLength">The length of data in stream we are allowed to write to</param>
         /// <returns>BinaryBuffer.</returns>
-        public BinaryReadBuffer AcquireReadBuffer(Stream stream)
+        public BinaryWriteBuffer AcquireWriteBuffer(Stream stream, long streamOffset = 0, int streamLength = int.MaxValue)
+            => AcquireWriteBuffer(BinaryStream.Passthrough(stream), streamOffset, streamLength);
+
+        /// <summary>
+        /// Acquires the buffer for the requested stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="streamOffset">The offset in stream where we start reading</param>
+        /// <param name="streamLength">The length of data in stream we are allowed to read</param>
+        /// <returns>BinaryBuffer.</returns>
+        public BinaryReadBuffer AcquireReadBuffer(IBinaryReadStream stream, long streamOffset = 0, int streamLength = int.MaxValue)
         {
             var handle = Acquire(MinSize);
-            return new BinaryReadBuffer(this, handle, stream);
+            return new BinaryReadBuffer(this, handle, stream, streamOffset, streamLength);
         }
+
+        /// <summary>
+        /// Acquires the buffer for the requested stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="streamOffset">The offset in stream where we start reading</param>
+        /// <param name="streamLength">The length of data in stream we are allowed to read</param>
+        /// <returns>BinaryBuffer.</returns>
+        public BinaryReadBuffer AcquireReadBuffer(Stream stream, long streamOffset = 0, int streamLength = int.MaxValue)
+            => AcquireReadBuffer(BinaryStream.Passthrough(stream), streamOffset, streamLength);
 
         /// <summary>
         /// Get a binary memory to use.

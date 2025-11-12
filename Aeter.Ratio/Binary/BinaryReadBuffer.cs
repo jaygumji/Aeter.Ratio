@@ -1,6 +1,7 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.IO;
 using System;
 using System.IO;
 using System.Threading;
@@ -10,16 +11,20 @@ namespace Aeter.Ratio.Binary
 {
     public class BinaryReadBuffer : BinaryBuffer
     {
+        private readonly IBinaryReadStream stream;
 
         public int Length { get; private set; } = -1;
 
-        public BinaryReadBuffer(BinaryBufferPool poolHandle, BinaryBufferPool.BinaryMemoryHandle handle, Stream stream)
-            : base(poolHandle, handle, stream)
+        public BinaryReadBuffer(BinaryBufferPool poolHandle, BinaryBufferPool.BinaryMemoryHandle handle, IBinaryReadStream stream, long streamOffset = 0, int streamLength = int.MaxValue)
+            : base(poolHandle, handle, stream, streamOffset, streamLength)
         {
+            this.stream = stream;
         }
 
-        public BinaryReadBuffer(int size, Stream stream) : base(new byte[size], stream)
+        public BinaryReadBuffer(int size, IBinaryReadStream stream, long streamOffset = 0, int streamLength = int.MaxValue)
+            : base(new byte[size], stream, streamOffset, streamLength)
         {
+            this.stream = stream;
         }
 
         public bool IsEndOfStream => Position == Length && Length < Size;
@@ -65,7 +70,9 @@ namespace Aeter.Ratio.Binary
             }
 
             Position = 0;
-            Length = sizeLeft + Read(Memory[copyOffset..Size]);
+            var (streamOffset, streamLength) = GetAndAdvanceStreamPosition(Size - copyOffset);
+            Length = sizeLeft + streamLength;
+            stream.Read(streamOffset, Memory.Span[copyOffset..Length]);
 
             if (require && Length == 0) {
                 throw new EndOfStreamException();
@@ -92,7 +99,9 @@ namespace Aeter.Ratio.Binary
             }
 
             Position = 0;
-            Length = sizeLeft + await ReadAsync(Memory[copyOffset..Size], cancellationToken);
+            var (streamOffset, streamLength) = GetAndAdvanceStreamPosition(Size - copyOffset);
+            Length = sizeLeft + streamLength;
+            await stream.ReadAsync(streamOffset, Memory[copyOffset..Length], cancellationToken);
 
             if (require && Length == 0) {
                 throw new EndOfStreamException();
@@ -112,7 +121,9 @@ namespace Aeter.Ratio.Binary
                 Expand(length, Position, sizeLeft);
                 Position = 0;
 
-                Length = sizeLeft + Read(Memory[copyOffset..Size]);
+                var (streamOffset, streamLength) = GetAndAdvanceStreamPosition(Size - copyOffset);
+                Length = sizeLeft + streamLength;
+                stream.Read(streamOffset, Memory.Span[copyOffset..Length]);
             }
             else {
                 RefillBuffer(require: false);
@@ -132,16 +143,34 @@ namespace Aeter.Ratio.Binary
                 Expand(length, Position, sizeLeft);
                 Position = 0;
 
-                Length = sizeLeft + await ReadAsync(Memory[copyOffset..Size], cancellationToken);
+                var (streamOffset, streamLength) = GetAndAdvanceStreamPosition(Size - copyOffset);
+                Length = sizeLeft + streamLength;
+                await stream.ReadAsync(streamOffset, Memory[copyOffset..Length], cancellationToken);
             }
             else {
                 await RefillBufferAsync(require: false, cancellationToken);
             }
         }
 
+        public ReadOnlySpan<byte> Read(int length)
+        {
+            RequestSpace(length);
+            var span = Span.Slice(Position, length);
+            Advance(length);
+            return span;
+        }
+
+        public async ValueTask<ReadOnlyMemory<byte>> ReadAsync(int length, CancellationToken cancellationToken = default)
+        {
+            await RequestSpaceAsync(length, cancellationToken);
+            var span = Memory.Slice(Position, length);
+            await AdvanceAsync(length, cancellationToken);
+            return span;
+        }
+
         public byte PeekByte() => PeekByte(0);
 
-        public Task<byte> PeekByteAsync(CancellationToken cancellationToken = default) => PeekByteAsync(0, cancellationToken);
+        public ValueTask<byte> PeekByteAsync(CancellationToken cancellationToken = default) => PeekByteAsync(0, cancellationToken);
 
         public byte PeekByte(int offset)
         {
@@ -159,7 +188,7 @@ namespace Aeter.Ratio.Binary
             return Span[offsetPosition];
         }
 
-        public async Task<byte> PeekByteAsync(int offset, CancellationToken cancellationToken = default)
+        public async ValueTask<byte> PeekByteAsync(int offset, CancellationToken cancellationToken = default)
         {
             await EnsureInitializedAsync(cancellationToken);
             var offsetPosition = Position + offset;

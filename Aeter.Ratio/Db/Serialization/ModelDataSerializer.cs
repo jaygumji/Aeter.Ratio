@@ -3,19 +3,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Binary;
 using Aeter.Ratio.DependencyInjection;
+using Aeter.Ratio.IO;
 using Aeter.Ratio.Serialization;
-using System.IO;
+using System;
 
 namespace Aeter.Ratio.Db.Serialization
 {
-    internal static class ModelDataSerializer
+    public class ModelDataSerializer(IInstanceFactory instanceFactory, BinaryBufferPool bufferPool) : ISerializer
     {
         internal static readonly ModelSerializationReflectionInspector Inspector = new ModelSerializationReflectionInspector();
-    }
-    public class ModelDataSerializer<T> : ITypedSerializer<T>
-    {
-        private readonly BinaryBufferPool _bufferPool;
-        private readonly SerializationEngine _engine;
+        private readonly SerializationEngine _engine = new(instanceFactory,
+                new GraphTravellerProvider(new DynamicGraphTravellerFactory(instanceFactory, Inspector)));
 
         public ModelDataSerializer() : this(BinaryBufferPool.Default)
         {
@@ -25,35 +23,29 @@ namespace Aeter.Ratio.Db.Serialization
         {
         }
 
-        public ModelDataSerializer(IInstanceFactory instanceFactory, BinaryBufferPool bufferPool)
+        public void Serialize(IBinaryWriteStream stream, object graph)
         {
-            _bufferPool = bufferPool;
-            _engine = new SerializationEngine(instanceFactory,
-                new GraphTravellerProvider(new DynamicGraphTravellerFactory(instanceFactory, ModelDataSerializer.Inspector)));
         }
 
-        void ITypedSerializer.Serialize(Stream stream, object graph)
+        public T Deserialize<T>(IBinaryReadStream stream)
         {
-            Serialize(stream, (T)graph);
-        }
-
-        public T Deserialize(Stream stream)
-        {
-            var visitor = new ModelDataReadVisitor(stream);
+            using var buffer = bufferPool.AcquireReadBuffer(stream);
+            var visitor = new ModelDataReadVisitor(buffer);
             return _engine.Deserialize<T>(visitor);
         }
 
-        public void Serialize(Stream stream, T graph)
+        public void Serialize<T>(IBinaryWriteStream stream, T graph)
         {
-            using (var buffer = _bufferPool.AcquireWriteBuffer(stream)) {
-                var visitor = new ModelDataWriteVisitor(buffer);
-                _engine.Serialize(visitor, graph);
-            }
+            using var buffer = bufferPool.AcquireWriteBuffer(stream);
+            var visitor = new ModelDataWriteVisitor(buffer);
+            _engine.Serialize(visitor, graph);
         }
 
-        object? ITypedSerializer.Deserialize(Stream stream)
+        public object? Deserialize(Type type, IBinaryReadStream stream)
         {
-            return Deserialize(stream);
+            using var buffer = bufferPool.AcquireReadBuffer(stream);
+            var visitor = new ModelDataReadVisitor(buffer);
+            return _engine.Deserialize(visitor, type);
         }
     }
 }

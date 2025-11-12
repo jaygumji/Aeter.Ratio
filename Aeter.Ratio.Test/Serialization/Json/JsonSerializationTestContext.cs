@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Aeter.Ratio.Binary;
+using Aeter.Ratio.IO;
 using Aeter.Ratio.Serialization;
 using Aeter.Ratio.Serialization.Json;
 using Aeter.Ratio.Testing.Fakes.Graphs;
@@ -27,7 +28,7 @@ namespace Aeter.Ratio.Test.Serialization.Json
         public void AssertWriteVisitorCall(string expected, Action<JsonWriteVisitor> action)
         {
             using (var memStream = new MemoryStream()) {
-                var buffer = new BinaryWriteBuffer(1024, memStream);
+                var buffer = new BinaryWriteBuffer(1024, BinaryStream.MemoryStream(memStream));
                 var writeVisitor = new JsonWriteVisitor(_encoding, _fieldNameResolver, buffer, new Stack<bool>(new [] {true}));
                 action(writeVisitor);
                 buffer.Flush();
@@ -40,7 +41,7 @@ namespace Aeter.Ratio.Test.Serialization.Json
         {
             var bytes = Encoding.UTF8.GetBytes(json);
             using (var memStream = new MemoryStream(bytes)) {
-                var buffer = new BinaryReadBuffer(1024, memStream);
+                var buffer = new BinaryReadBuffer(1024, BinaryStream.MemoryStream(memStream));
                 var readVisitor = new JsonReadVisitor(_encoding, _fieldNameResolver, buffer);
                 action(readVisitor);
             }
@@ -87,8 +88,8 @@ namespace Aeter.Ratio.Test.Serialization.Json
 
         public void AssertDeserialize<T>(string json, T expected, IEqualityComparer<T> comparer)
         {
-            var serializer = new JsonSerializer<T>();
-            var actual = serializer.Deserialize(json);
+            var serializer = new JsonSerializer();
+            var actual = serializer.Deserialize<T>(json);
             Assert.Equal(expected, actual, comparer);
         }
 
@@ -99,9 +100,9 @@ namespace Aeter.Ratio.Test.Serialization.Json
             Assert.Equal(expected, jsonString);
         }
 
-        protected override ITypedSerializer<T> CreateSerializer<T>()
+        protected override ISerializer CreateSerializer()
         {
-            return new JsonSerializer<T> {
+            return new JsonSerializer {
                 Encoding = _encoding,
                 FieldNameResolver = _fieldNameResolver
             };

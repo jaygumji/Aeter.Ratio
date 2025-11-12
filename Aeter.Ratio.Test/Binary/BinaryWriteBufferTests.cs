@@ -1,9 +1,10 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Binary;
+using Aeter.Ratio.IO;
 using System;
 using System.IO;
-using Aeter.Ratio.Binary;
 using Xunit;
 
 namespace Aeter.Ratio.Test.Binary
@@ -14,7 +15,7 @@ namespace Aeter.Ratio.Test.Binary
         public void WriteAndFlush_UsesSynchronousStream()
         {
             using var stream = new MemoryStream();
-            using var buffer = new BinaryWriteBuffer(4, stream);
+            using var buffer = new BinaryWriteBuffer(4, BinaryStream.MemoryStream(stream));
 
             buffer.Write(new byte[] { 1, 2, 3, 4 });
             buffer.Flush();
@@ -26,7 +27,7 @@ namespace Aeter.Ratio.Test.Binary
         public void ReserveAndUse_WritesDataBeforeFlush()
         {
             using var stream = new MemoryStream();
-            using var buffer = new BinaryWriteBuffer(8, stream);
+            using var buffer = new BinaryWriteBuffer(8, BinaryStream.MemoryStream(stream));
 
             var reservation = buffer.Reserve(4);
             buffer.Use(reservation, new byte[] { 9, 8, 7, 6 }, 0, 4);
@@ -40,7 +41,7 @@ namespace Aeter.Ratio.Test.Binary
         public void Use_RespectsProvidedLength()
         {
             using var stream = new MemoryStream();
-            using var buffer = new BinaryWriteBuffer(8, stream);
+            using var buffer = new BinaryWriteBuffer(8, BinaryStream.MemoryStream(stream));
 
             var reservation = buffer.Reserve(4);
             buffer.Use(reservation, new byte[] { 1, 2, 3, 4 }, 0, 2);
@@ -53,7 +54,7 @@ namespace Aeter.Ratio.Test.Binary
         public void Use_ThrowsWhenLengthExceedsReservation()
         {
             using var stream = new MemoryStream();
-            using var buffer = new BinaryWriteBuffer(4, stream);
+            using var buffer = new BinaryWriteBuffer(4, BinaryStream.MemoryStream(stream));
 
             var reservation = buffer.Reserve(2);
 
@@ -64,7 +65,7 @@ namespace Aeter.Ratio.Test.Binary
         public void WriteByte_FlushesWhenBufferIsFull()
         {
             using var stream = new MemoryStream();
-            using var buffer = new BinaryWriteBuffer(2, stream);
+            using var buffer = new BinaryWriteBuffer(2, BinaryStream.MemoryStream(stream));
 
             buffer.Write(new byte[] { 9, 8 });
             buffer.WriteByte(7);

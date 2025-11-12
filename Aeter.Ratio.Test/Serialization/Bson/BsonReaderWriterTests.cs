@@ -1,12 +1,13 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+using Aeter.Ratio.Binary;
+using Aeter.Ratio.IO;
+using Aeter.Ratio.Serialization;
+using Aeter.Ratio.Serialization.Bson;
 using System;
 using System.IO;
 using System.Linq;
-using Aeter.Ratio.Binary;
-using Aeter.Ratio.Serialization;
-using Aeter.Ratio.Serialization.Bson;
 using Xunit;
 
 namespace Aeter.Ratio.Test.Serialization.Bson
@@ -33,7 +34,7 @@ namespace Aeter.Ratio.Test.Serialization.Bson
         public void BsonReader_ReadsPrimitiveNodes()
         {
             using var stream = new MemoryStream(SampleDocument);
-            using var buffer = new BinaryReadBuffer(1024, stream);
+            using var buffer = new BinaryReadBuffer(1024, BinaryStream.MemoryStream(stream));
             var reader = new BsonReader(buffer, BsonEncoding.UTF8);
             var size = reader.ReadInt32();
             Assert.True(size > 0);
@@ -84,7 +85,7 @@ namespace Aeter.Ratio.Test.Serialization.Bson
         public void BsonReadVisitor_ReadsPrimitiveValues()
         {
             using var stream = new MemoryStream(SampleDocument);
-            using var buffer = new BinaryReadBuffer(1024, stream);
+            using var buffer = new BinaryReadBuffer(1024, BinaryStream.MemoryStream(stream));
             var visitor = new BsonReadVisitor(BsonEncoding.UTF8, new CamelCaseFieldNameResolver(), buffer);
             var rootArgs = VisitArgs.CreateRoot(LevelType.Dictionary);
 
@@ -115,7 +116,7 @@ namespace Aeter.Ratio.Test.Serialization.Bson
         private static byte[] CreateSampleDocumentBytes()
         {
             using var stream = new MemoryStream();
-            using var buffer = new BinaryWriteBuffer(2048, stream);
+            using var buffer = new BinaryWriteBuffer(2048, BinaryStream.MemoryStream(stream));
             var visitor = new BsonWriteVisitor(BsonEncoding.UTF8, new CamelCaseFieldNameResolver(), buffer);
             var rootArgs = VisitArgs.CreateRoot(LevelType.Dictionary);
             var root = new object();

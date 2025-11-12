@@ -7,20 +7,12 @@ namespace Aeter.Ratio.Binary.Converters
 {
     public class BinaryConverterTimeSpan : IBinaryConverter<TimeSpan>
     {
-        public TimeSpan Convert(Span<byte> value)
-        {
-            return Convert(value, 0, value.Length);
-        }
+        private const int Size = sizeof(long);
 
-        public TimeSpan Convert(Span<byte> value, int startIndex)
+        public TimeSpan Convert(ReadOnlySpan<byte> value)
         {
-            var ticks = BinaryPrimitives.ReadInt64LittleEndian(value.Slice(startIndex));
+            var ticks = BinaryPrimitives.ReadInt64LittleEndian(value);
             return new TimeSpan(ticks);
-        }
-
-        public TimeSpan Convert(Span<byte> value, int startIndex, int length)
-        {
-            return Convert(value, startIndex);
         }
 
         public byte[] Convert(TimeSpan value)
@@ -28,19 +20,22 @@ namespace Aeter.Ratio.Binary.Converters
             return BitConverter.GetBytes(value.Ticks);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value)
+        public void Convert(TimeSpan value, Span<byte> buffer)
         {
-            return Convert(value, 0, value.Length);
+            if (buffer.Length < Size)
+                throw new BufferOverflowException("The buffer can not contain the value");
+            BinaryPrimitives.WriteInt64LittleEndian(buffer, value.Ticks);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
+        public void Convert(TimeSpan value, BinaryWriteBuffer writeBuffer)
         {
-            return Convert(value, startIndex, value.Length - startIndex);
+            var bytes = Convert(value);
+            writeBuffer.Write(bytes);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
+        object IBinaryConverter.Convert(ReadOnlySpan<byte> value)
         {
-            return Convert(value, startIndex, length);
+            return Convert(value);
         }
 
         byte[] IBinaryConverter.Convert(object value)
@@ -48,32 +43,9 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((TimeSpan)value);
         }
 
-        public void Convert(TimeSpan value, Span<byte> buffer)
-        {
-            Convert(value, buffer, 0);
-        }
-
-        public void Convert(TimeSpan value, Span<byte> buffer, int offset)
-        {
-            if (buffer.Length < offset + 8)
-                throw new BufferOverflowException("The buffer can not contain the value");
-            BinaryPrimitives.WriteInt64LittleEndian(buffer.Slice(offset), value.Ticks);
-        }
-
         void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
-            Convert((TimeSpan)value, buffer, 0);
-        }
-
-        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
-        {
-            Convert((TimeSpan)value, buffer, offset);
-        }
-
-        public void Convert(TimeSpan value, BinaryWriteBuffer writeBuffer)
-        {
-            var bytes = Convert(value);
-            writeBuffer.Write(bytes);
+            Convert((TimeSpan)value, buffer);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)

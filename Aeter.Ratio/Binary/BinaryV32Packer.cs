@@ -89,6 +89,42 @@ namespace Aeter.Ratio.Binary
         /// <summary>
         /// Unpacks a value packed with the variable pack algorithm
         /// </summary>
+        /// <param name="buffer">The stream where we read the value from</param>
+        /// <returns>The unpacked value</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint? UnpackU(BinaryReadBuffer buffer)
+        {
+            var b = (UInt32)buffer.ReadByte();
+            if (b == 7) return null;
+
+            var length = (byte)(b << 29 >> 29);
+
+            var result = b >> 3;
+
+            if (length == 0) return result;
+            b = (UInt32)buffer.ReadByte();
+            var part = b << 5;
+            result |= part;
+
+            if (length == 1) return result;
+            b = (UInt32)buffer.ReadByte();
+            part = b << 13;
+            result |= part;
+
+            if (length == 2) return result;
+            b = (UInt32)buffer.ReadByte();
+            part = b << 21;
+            result |= part;
+
+            if (length == 3) return result;
+            b = (UInt32)buffer.ReadByte();
+            part = b << 29;
+            return result | part;
+        }
+
+        /// <summary>
+        /// Unpacks a value packed with the variable pack algorithm
+        /// </summary>
         /// <param name="stream">The stream where we read the value from</param>
         /// <returns>The unpacked value</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

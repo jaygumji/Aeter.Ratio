@@ -2,17 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Aeter.Ratio.IO
 {
-    public interface IStream : IDisposable
+    public interface IBinaryStream : IDisposable
     {
+        long Position { get; }
         long Length { get; }
 
         void Flush();
-        Task FlushAsync(CancellationToken cancellationToken = default);
-        void FlushForced();
     }
 }

@@ -66,8 +66,8 @@ namespace Aeter.Ratio.Test.Serialization.Bson
 
         public void AssertDeserialize<T>(byte[] bson, T expected, IEqualityComparer<T> comparer)
         {
-            var serializer = new BsonSerializer<T>();
-            var actual = serializer.Deserialize(bson);
+            var serializer = new BsonSerializer();
+            var actual = serializer.Deserialize<T>(bson);
             Assert.Equal(expected, actual, comparer);
         }
 
@@ -83,9 +83,9 @@ namespace Aeter.Ratio.Test.Serialization.Bson
             Assert.Equal(expected, bytes, BlobComparer.Instance);
         }
 
-        protected override ITypedSerializer<T> CreateSerializer<T>()
+        protected override ISerializer CreateSerializer()
         {
-            return new BsonSerializer<T> {
+            return new BsonSerializer {
                 Encoding = _encoding,
                 FieldNameResolver = _fieldNameResolver
             };

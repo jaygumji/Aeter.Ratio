@@ -7,19 +7,11 @@ namespace Aeter.Ratio.Binary.Converters
 {
     public class BinaryConverterInt32 : IBinaryConverter<Int32>
     {
-        public Int32 Convert(Span<byte> value)
-        {
-            return Convert(value, 0, value.Length);
-        }
+        private const int Size = sizeof(Int32);
 
-        public Int32 Convert(Span<byte> value, int startIndex)
+        public Int32 Convert(ReadOnlySpan<byte> value)
         {
-            return BinaryPrimitives.ReadInt32LittleEndian(value.Slice(startIndex));
-        }
-
-        public Int32 Convert(Span<byte> value, int startIndex, int length)
-        {
-            return Convert(value, startIndex);
+            return BinaryPrimitives.ReadInt32LittleEndian(value);
         }
 
         public byte[] Convert(Int32 value)
@@ -27,19 +19,22 @@ namespace Aeter.Ratio.Binary.Converters
             return BitConverter.GetBytes(value);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value)
+        public void Convert(Int32 value, Span<byte> buffer)
         {
-            return Convert(value, 0, value.Length);
+            if (buffer.Length < Size)
+                throw new BufferOverflowException("The buffer can not contain the value");
+            BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex)
+        public void Convert(Int32 value, BinaryWriteBuffer writeBuffer)
         {
-            return Convert(value, startIndex, value.Length - startIndex);
+            var bytes = Convert(value);
+            writeBuffer.Write(bytes);
         }
 
-        object IBinaryConverter.Convert(Span<byte> value, int startIndex, int length)
+        object IBinaryConverter.Convert(ReadOnlySpan<byte> value)
         {
-            return Convert(value, startIndex, length);
+            return Convert(value);
         }
 
         byte[] IBinaryConverter.Convert(object value)
@@ -47,32 +42,9 @@ namespace Aeter.Ratio.Binary.Converters
             return Convert((Int32)value);
         }
 
-        public void Convert(Int32 value, Span<byte> buffer)
-        {
-            Convert(value, buffer, 0);
-        }
-
-        public void Convert(Int32 value, Span<byte> buffer, int offset)
-        {
-            if (buffer.Length < offset + 4)
-                throw new BufferOverflowException("The buffer can not contain the value");
-            BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(offset), value);
-        }
-
         void IBinaryConverter.Convert(object value, Span<byte> buffer)
         {
-            Convert((Int32)value, buffer, 0);
-        }
-
-        void IBinaryConverter.Convert(object value, Span<byte> buffer, int offset)
-        {
-            Convert((Int32)value, buffer, offset);
-        }
-
-        public void Convert(Int32 value, BinaryWriteBuffer writeBuffer)
-        {
-            var bytes = Convert(value);
-            writeBuffer.Write(bytes);
+            Convert((Int32)value, buffer);
         }
 
         void IBinaryConverter.Convert(object value, BinaryWriteBuffer writeBuffer)

@@ -11,15 +11,15 @@ namespace Aeter.Ratio.Db.Serialization
 {
     public class ModelDataReadVisitor : IReadVisitor
     {
-        private readonly Stream _stream;
+        private readonly BinaryReadBuffer _buffer;
         private readonly BinaryDataReader _reader;
         private UInt32 _nextIndex;
         private bool _endOfLevel;
 
-        public ModelDataReadVisitor(Stream stream)
+        public ModelDataReadVisitor(BinaryReadBuffer buffer)
         {
-            _stream = stream;
-            _reader = new BinaryDataReader(stream);
+            _buffer = buffer;
+            _reader = new BinaryDataReader(buffer);
         }
 
         private static bool SkipDataIndex(uint dataIndex, uint index)
@@ -107,7 +107,7 @@ namespace Aeter.Ratio.Db.Serialization
             if (length != BinaryInformation.Byte.FixedLength)
                 throw new UnexpectedLengthException(args, length);
 
-            value = (Byte)_stream.ReadByte();
+            value = (Byte)_buffer.ReadByte();
             return true;
         }
 
@@ -122,7 +122,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = (Int16)BinaryPV64Packer.UnpackS(_stream, length);
+            value = (Int16)BinaryPV64Packer.UnpackS(_buffer, length);
             return true;
         }
 
@@ -137,7 +137,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = (Int32)BinaryPV64Packer.UnpackS(_stream, length);
+            value = (Int32)BinaryPV64Packer.UnpackS(_buffer, length);
             return true;
         }
 
@@ -152,7 +152,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = BinaryPV64Packer.UnpackS(_stream, length);
+            value = BinaryPV64Packer.UnpackS(_buffer, length);
             return true;
         }
 
@@ -167,7 +167,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = (UInt16)BinaryPV64Packer.UnpackU(_stream, length);
+            value = (UInt16)BinaryPV64Packer.UnpackU(_buffer, length);
             return true;
         }
 
@@ -182,7 +182,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = (UInt32)BinaryPV64Packer.UnpackU(_stream, length);
+            value = (UInt32)BinaryPV64Packer.UnpackU(_buffer, length);
             return true;
         }
 
@@ -197,7 +197,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = BinaryPV64Packer.UnpackU(_stream, length);
+            value = BinaryPV64Packer.UnpackU(_buffer, length);
             return true;
         }
 
@@ -284,7 +284,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = new TimeSpan(BinaryPV64Packer.UnpackS(_stream, length));
+            value = new TimeSpan(BinaryPV64Packer.UnpackS(_buffer, length));
             return true;
         }
 
@@ -299,7 +299,7 @@ namespace Aeter.Ratio.Db.Serialization
                 value = null;
                 return true;
             }
-            value = new DateTime(BinaryPV64Packer.UnpackS(_stream, length), DateTimeKind.Utc).ToLocalTime();
+            value = new DateTime(BinaryPV64Packer.UnpackS(_buffer, length), DateTimeKind.Utc).ToLocalTime();
             return true;
         }
 
