@@ -35,7 +35,7 @@ namespace Aeter.Ratio.Binary
 
         public long Size => stream.Length;
 
-        public async Task WithWriteBufferAsync(long offset, int length, Func<BinaryWriteBuffer, Task> callback, CancellationToken cancellationToken = default)
+        public async Task<BinaryWriteBuffer> GetWriteSpaceAsync(long offset, int length, CancellationToken cancellationToken = default)
         {
             using var header = bufferPool.Acquire(HeaderLength);
             header.Memory.Span[0] = 1;
@@ -44,8 +44,7 @@ namespace Aeter.Ratio.Binary
             }
 
             await stream.WriteAsync(offset, header.Memory, cancellationToken);
-            using var buffer = bufferPool.AcquireWriteBuffer(stream, offset + HeaderLength, length);
-            await callback(buffer);
+            return bufferPool.AcquireWriteBuffer(stream, offset + HeaderLength, length);
         }
 
         public async ValueTask<long> WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
@@ -84,7 +83,7 @@ namespace Aeter.Ratio.Binary
             }
         }
 
-        public async Task<BinaryReadBuffer> GetReadBufferAsync(long offset, CancellationToken cancellationToken = default)
+        public async Task<BinaryReadBuffer> GetReadSpaceAsync(long offset, CancellationToken cancellationToken = default)
         {
             await EnsureFlushedAsync(offset, cancellationToken);
 
@@ -94,9 +93,7 @@ namespace Aeter.Ratio.Binary
             var type = header.Memory.Span[0];
             var size = BitConverter.ToInt32(header.Memory.Span[1..]);
 
-            var buffer = bufferPool.AcquireReadBuffer(stream, offset + HeaderLength, size - HeaderLength);
-
-            return buffer;
+            return bufferPool.AcquireReadBuffer(stream, offset + HeaderLength, size - HeaderLength);
         }
 
         public async Task<Memory<byte>> ReadAsync(long offset, CancellationToken cancellationToken = default)

@@ -94,7 +94,7 @@ namespace Aeter.Ratio.Binary
 
             var value = (uint)(Position - reservation.Position);
             var buffer = BinaryInformation.UInt32.Converter.Convert(value);
-            Use(reservation, buffer, 0, buffer.Length);
+            Use(reservation, buffer);
         }
 
         public void ApplyInt32Size(BinaryBufferReservation reservation)
@@ -103,17 +103,17 @@ namespace Aeter.Ratio.Binary
 
             var value = Position - reservation.Position;
             var buffer = BinaryInformation.Int32.Converter.Convert(value);
-            Use(reservation, buffer, 0, buffer.Length);
+            Use(reservation, buffer);
         }
 
-        public void Use(BinaryBufferReservation reservation, byte[] buffer, int offset, int length)
+        public void Use(BinaryBufferReservation reservation, Span<byte> value)
         {
             Verify();
 
-            if (length > reservation.Size)
+            if (value.Length > reservation.Size)
                 throw new ArgumentException("The supplied buffer can not exceed the reservation size");
 
-            buffer.AsSpan(offset, length).CopyTo(Span.Slice(reservation.Position, length));
+            value.CopyTo(Span.Slice(reservation.Position, value.Length));
 
             if (ReferenceEquals(_firstReservation, reservation)) {
                 _reservations.RemoveAt(0);

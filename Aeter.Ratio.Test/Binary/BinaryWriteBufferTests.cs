@@ -17,10 +17,10 @@ namespace Aeter.Ratio.Test.Binary
             using var stream = new MemoryStream();
             using var buffer = new BinaryWriteBuffer(4, BinaryStream.MemoryStream(stream));
 
-            buffer.Write(new byte[] { 1, 2, 3, 4 });
+            buffer.Write([1, 2, 3, 4]);
             buffer.Flush();
 
-            Assert.Equal(new byte[] { 1, 2, 3, 4 }, stream.ToArray());
+            Assert.Equal([1, 2, 3, 4], stream.ToArray());
         }
 
         [Fact]
@@ -30,11 +30,11 @@ namespace Aeter.Ratio.Test.Binary
             using var buffer = new BinaryWriteBuffer(8, BinaryStream.MemoryStream(stream));
 
             var reservation = buffer.Reserve(4);
-            buffer.Use(reservation, new byte[] { 9, 8, 7, 6 }, 0, 4);
-            buffer.Write(new byte[] { 5, 4 });
+            buffer.Use(reservation, [9, 8, 7, 6]);
+            buffer.Write([5, 4]);
             buffer.Flush();
 
-            Assert.Equal(new byte[] { 9, 8, 7, 6, 5, 4 }, stream.ToArray());
+            Assert.Equal([9, 8, 7, 6, 5, 4], stream.ToArray());
         }
 
         [Fact]
@@ -44,10 +44,10 @@ namespace Aeter.Ratio.Test.Binary
             using var buffer = new BinaryWriteBuffer(8, BinaryStream.MemoryStream(stream));
 
             var reservation = buffer.Reserve(4);
-            buffer.Use(reservation, new byte[] { 1, 2, 3, 4 }, 0, 2);
+            buffer.Use(reservation, new byte[] { 1, 2, 3, 4 }.AsSpan(0, 2));
             buffer.Flush();
 
-            Assert.Equal(new byte[] { 1, 2, 0, 0 }, stream.ToArray());
+            Assert.Equal([1, 2, 0, 0], stream.ToArray());
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace Aeter.Ratio.Test.Binary
 
             var reservation = buffer.Reserve(2);
 
-            Assert.Throws<ArgumentException>(() => buffer.Use(reservation, new byte[] { 1, 2, 3 }, 0, 3));
+            Assert.Throws<ArgumentException>(() => buffer.Use(reservation, [1, 2, 3]));
         }
 
         [Fact]
@@ -67,11 +67,11 @@ namespace Aeter.Ratio.Test.Binary
             using var stream = new MemoryStream();
             using var buffer = new BinaryWriteBuffer(2, BinaryStream.MemoryStream(stream));
 
-            buffer.Write(new byte[] { 9, 8 });
+            buffer.Write([9, 8]);
             buffer.WriteByte(7);
             buffer.Flush();
 
-            Assert.Equal(new byte[] { 9, 8, 7 }, stream.ToArray());
+            Assert.Equal([9, 8, 7], stream.ToArray());
         }
     }
 }
