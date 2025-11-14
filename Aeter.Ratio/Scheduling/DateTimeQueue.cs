@@ -4,89 +4,86 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading;
 
 namespace Aeter.Ratio.Scheduling
 {
     public class DateTimeQueue<T>
     {
+        private readonly object _sync = new();
+        private readonly SortedDictionary<DateTime, Queue<T>> _entries = new();
+        private int _count;
 
-        private volatile int _count;
-        private readonly SortedDictionary<DateTime, List<T>> _entries; 
-
-        public DateTimeQueue()
-        {
-            _entries = new SortedDictionary<DateTime, List<T>>();
-            _count = 0;
-        }
-
-        public bool IsEmpty => _count == 0;
+        public bool IsEmpty => Volatile.Read(ref _count) == 0;
 
         public void Enqueue(DateTime when, T value)
         {
-            if (!_entries.TryGetValue(when, out var list)) {
-                lock (_entries) {
-                    if (!_entries.TryGetValue(when, out list)) {
-                        list = new List<T>();
-                        _entries.Add(when, list);
-                    }
+            lock (_sync) {
+                if (!_entries.TryGetValue(when, out var queue)) {
+                    queue = new Queue<T>();
+                    _entries.Add(when, queue);
                 }
+                queue.Enqueue(value);
+                Interlocked.Increment(ref _count);
             }
-            lock (list) {
-                list.Add(value);
-            }
-            _count++;
         }
 
         public bool TryDequeue([MaybeNullWhen(false)] out IEnumerable<T> values)
         {
-            if (_count == 0) {
-                values = null;
+            values = null;
+            if (IsEmpty) {
                 return false;
             }
 
+            Queue<T> queue;
+            int removedCount;
             var now = DateTime.Now;
-            KeyValuePair<DateTime, List<T>> kv;
-            lock (_entries) {
-                if (_entries.Count == 0) {
-                    values = null;
+            lock (_sync) {
+                if (!TryGetFirstEntry(out var entry)) {
                     return false;
                 }
 
-                kv = _entries.First();
-                if (kv.Key > now) {
-                    values = null;
+                if (entry.Key > now) {
                     return false;
                 }
-                _entries.Remove(kv.Key);
+
+                queue = entry.Value;
+                removedCount = queue.Count;
+                _entries.Remove(entry.Key);
             }
 
-            values = kv.Value;
-            _count -= kv.Value.Count;
+            values = queue;
+            Interlocked.Add(ref _count, -removedCount);
             return true;
         }
 
         public bool TryPeekNextEntryAt(out DateTime nextAt)
         {
-            if (_count == 0) {
-                nextAt = default(DateTime);
+            nextAt = default;
+            if (IsEmpty) {
                 return false;
             }
 
-            KeyValuePair<DateTime, List<T>> kv;
-            lock (_entries) {
-                if (_entries.Count == 0) {
-                    nextAt = default(DateTime);
+            lock (_sync) {
+                if (!TryGetFirstEntry(out var entry)) {
                     return false;
                 }
 
-                kv = _entries.First();
+                nextAt = entry.Key;
+                return true;
             }
-
-            nextAt = kv.Key;
-            return true;
         }
 
+        private bool TryGetFirstEntry(out KeyValuePair<DateTime, Queue<T>> entry)
+        {
+            var enumerator = _entries.GetEnumerator();
+            if (!enumerator.MoveNext()) {
+                entry = default;
+                return false;
+            }
+
+            entry = enumerator.Current;
+            return true;
+        }
     }
 }
