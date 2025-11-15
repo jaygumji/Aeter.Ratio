@@ -15,11 +15,17 @@ namespace Aeter.Ratio.Binary
     public class BinaryReadBuffer : BinaryBuffer
     {
         private readonly IBinaryReadStream stream;
+        private readonly long originOffset;
+        private long consumed;
 
         /// <summary>
         /// Gets the number of valid bytes currently cached in the buffer. A value of -1 means it has not been filled yet.
         /// </summary>
         public int Length { get; private set; } = -1;
+        /// <summary>
+        /// Gets the total number of bytes consumed from the start offset supplied when the buffer was created.
+        /// </summary>
+        public long TotalConsumed => consumed;
 
         /// <summary>
         /// Creates a reader that rents its backing memory from a pool.
@@ -29,6 +35,7 @@ namespace Aeter.Ratio.Binary
             : base(poolHandle, handle, stream, streamOffset, streamLength)
         {
             this.stream = stream;
+            originOffset = streamOffset;
         }
 
         /// <summary>
@@ -38,6 +45,7 @@ namespace Aeter.Ratio.Binary
             : base(new byte[size], stream, streamOffset, streamLength)
         {
             this.stream = stream;
+            originOffset = streamOffset;
         }
 
         /// <summary>
@@ -60,6 +68,7 @@ namespace Aeter.Ratio.Binary
         public byte ReadByte()
         {
             RefillBuffer();
+            consumed++;
             return Span[Position++];
         }
 
@@ -69,6 +78,7 @@ namespace Aeter.Ratio.Binary
         public async Task<byte> ReadByteAsync(CancellationToken cancellationToken = default)
         {
             await RefillBufferAsync(cancellationToken: cancellationToken);
+            consumed++;
             return Span[Position++];
         }
 
@@ -272,9 +282,24 @@ namespace Aeter.Ratio.Binary
         public void CopyTo(byte[] destArr, int destOffset, int length)
         {
             if (destArr.Length < length) throw new ArgumentException("Insufficient length of array", nameof(destArr));
-            RequestSpace(length);
-            Span.Slice(Position, length).CopyTo(destArr.AsSpan(destOffset, length));
-            Advance(length);
+
+            var remaining = length;
+            var writeOffset = destOffset;
+            while (remaining > 0) {
+                if (Length < 0 || Position == Length) {
+                    RefillBuffer(require: false);
+                    if (Length == Position) {
+                        throw new EndOfStreamException();
+                    }
+                }
+
+                var available = Math.Min(Length - Position, remaining);
+                Span.Slice(Position, available).CopyTo(destArr.AsSpan(writeOffset, available));
+                Position += available;
+                consumed += available;
+                remaining -= available;
+                writeOffset += available;
+            }
         }
 
         /// <summary>
@@ -282,10 +307,25 @@ namespace Aeter.Ratio.Binary
         /// </summary>
         public async Task CopyToAsync(byte[] destArr, int destOffset, int length, CancellationToken cancellationToken = default)
         {
-            if (destArr.Length < length) throw new System.ArgumentException("Insufficient length of array", nameof(destArr));
-            await RequestSpaceAsync(length, cancellationToken);
-            Span.Slice(Position, length).CopyTo(destArr.AsSpan(destOffset, length));
-            await AdvanceAsync(length, cancellationToken);
+            if (destArr.Length < length) throw new ArgumentException("Insufficient length of array", nameof(destArr));
+
+            var remaining = length;
+            var writeOffset = destOffset;
+            while (remaining > 0) {
+                if (Length < 0 || Position == Length) {
+                    await RefillBufferAsync(require: false, cancellationToken: cancellationToken);
+                    if (Length == Position) {
+                        throw new EndOfStreamException();
+                    }
+                }
+
+                var available = Math.Min(Length - Position, remaining);
+                Span.Slice(Position, available).CopyTo(destArr.AsSpan(writeOffset, available));
+                Position += available;
+                consumed += available;
+                remaining -= available;
+                writeOffset += available;
+            }
         }
 
         /// <summary>
@@ -295,6 +335,7 @@ namespace Aeter.Ratio.Binary
         {
             RefillBuffer();
             Position += length;
+            consumed += length;
         }
 
         /// <summary>
@@ -304,6 +345,7 @@ namespace Aeter.Ratio.Binary
         {
             await RefillBufferAsync(cancellationToken: cancellationToken);
             Position += length;
+            consumed += length;
         }
 
         /// <summary>
@@ -326,7 +368,26 @@ namespace Aeter.Ratio.Binary
                 var available = Length - Position;
                 var consume = Math.Min(available, remaining);
                 Position += consume;
+                consumed += consume;
                 remaining -= consume;
+            }
+        }
+
+        /// <summary>
+        /// Skips forward to the absolute <paramref name="offset"/> measured from the origin supplied when the buffer was created.
+        /// </summary>
+        public async Task SkipToAsync(long offset, CancellationToken cancellationToken = default)
+        {
+            var current = originOffset + consumed;
+            if (offset < current) {
+                throw new ArgumentOutOfRangeException(nameof(offset), "Cannot skip backwards in the stream.");
+            }
+
+            var delta = offset - current;
+            while (delta > 0) {
+                var chunk = delta > int.MaxValue ? int.MaxValue : (int)delta;
+                await SkipAsync(chunk, cancellationToken);
+                delta -= chunk;
             }
         }
     }

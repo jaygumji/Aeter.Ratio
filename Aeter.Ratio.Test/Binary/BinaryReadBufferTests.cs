@@ -3,9 +3,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Binary;
 using Aeter.Ratio.IO;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Aeter.Ratio.Test.Binary
@@ -38,7 +40,32 @@ namespace Aeter.Ratio.Test.Binary
             buffer.CopyTo(destination, 0, destination.Length);
 
             Assert.Equal(payload.Take(destination.Length), destination);
-            Assert.Equal(destination.Length, buffer.Position);
+            Assert.Equal(destination.Length, buffer.TotalConsumed);
+        }
+
+        [Fact]
+        public async Task SkipToAsync_MovesBufferToRequestedOffset()
+        {
+            var payload = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
+            using var stream = new MemoryStream(payload);
+            using var buffer = new BinaryReadBuffer(8, BinaryStream.MemoryStream(stream));
+
+            await buffer.SkipToAsync(25);
+            var value = buffer.ReadByte();
+
+            Assert.Equal(payload[25], value);
+        }
+
+        [Fact]
+        public async Task SkipToAsync_ThrowsWhenAttemptingToMoveBackwards()
+        {
+            var payload = Enumerable.Range(0, 20).Select(i => (byte)i).ToArray();
+            using var stream = new MemoryStream(payload);
+            using var buffer = new BinaryReadBuffer(8, BinaryStream.MemoryStream(stream));
+
+            await buffer.SkipAsync(10);
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => buffer.SkipToAsync(5));
         }
     }
 }

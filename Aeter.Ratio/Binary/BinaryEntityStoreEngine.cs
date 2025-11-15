@@ -1,136 +1,203 @@
-﻿using Aeter.Ratio.Scheduling;
+﻿using Aeter.Ratio.IO;
+using Aeter.Ratio.Scheduling;
+using Aeter.Ratio.Serialization;
+using Aeter.Ratio.Serialization.Bson;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using Aeter.Ratio.Threading;
 
 namespace Aeter.Ratio.Binary
 {
-    public class BinaryEntityStoreEngine(BinaryEntityStoreFileSystem fileSystem, BinaryStore store, BinaryEntityStoreHeader header, Scheduler scheduler, BinaryEntityStoreToc toc)
+    public class BinaryEntityStoreEngine : IDisposable, IAsyncDisposable
     {
-        public static async Task<BinaryEntityStoreEngine> CreateAsync(string path, BinaryBufferPool bufferPool)
+        private BinaryEntityStoreHeader? header;
+        private IEntitySerializer? serializer;
+        private readonly BinaryEntityStoreFileSystem fileSystem;
+        private readonly BinaryBufferPool bufferPool;
+        private readonly BinaryEntityStore store;
+        private readonly Scheduler scheduler;
+        private readonly BinaryEntityStoreToc toc;
+        private readonly ReadExclusiveWriteLock<Guid> entityLocks = new();
+        private readonly SemaphoreSlim appendLock = new(1, 1);
+        private readonly Task initializationTask;
+        private bool disposed;
+
+        public BinaryEntityStoreEngine(BinaryEntityStoreFileSystem fileSystem, BinaryEntityStore store, BinaryBufferPool bufferPool, Scheduler scheduler, BinaryEntityStoreToc toc, ScheduledTaskHandle initHandle)
+        {
+            this.fileSystem = fileSystem;
+            this.store = store;
+            this.scheduler = scheduler;
+            this.toc = toc;
+            this.bufferPool = bufferPool;
+            initializationTask = InitializeAsync(initHandle, bufferPool);
+        }
+
+        public static async Task<BinaryEntityStoreEngine> CreateAsync(string path, BinaryBufferPool bufferPool, CancellationToken cancellationToken = default)
         {
             var fileSystem = new BinaryEntityStoreFileSystem(path);
-            var store = new BinaryStore(fileSystem.Store.Path, bufferPool);
-            BinaryEntityStoreHeader header;
-            if (store.Size == 0) {
-                header = new BinaryEntityStoreHeader();
-                var space = await store.WriteAsync(0, header.Size);
-                await header.WriteToAsync(space);
-            }
-            else {
-                var space = await store.ReadAsync(0);
-                header = await BinaryEntityStoreHeader.ReadFromAsync(space);
-            }
+            var store = new BinaryEntityStore(fileSystem.Store.Path, bufferPool);
             var scheduler = new Scheduler();
-            var toc = await BinaryEntityStoreToc.CreateAsync(fileSystem.TableOfContent.Path, bufferPool, store, scheduler);
-            return new BinaryEntityStoreEngine(fileSystem, store, header, scheduler, toc);
+            var (toc, initHandle) = await BinaryEntityStoreToc.CreateAsync(fileSystem.TableOfContent.Path, bufferPool, store, scheduler, cancellationToken);
+
+            return new BinaryEntityStoreEngine(fileSystem, store, bufferPool, scheduler, toc, initHandle);
         }
 
-        //public async Task AddAsync(object entity)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public async Task UpdateAsync(object entity)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public async Task DeleteAsync(object entity)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public async Task<object> GetAsync(object id)
-        //{
-        //    throw new NotImplementedException();
-        //}
-    }
-
-    public class BinaryEntityStoreToc(BinaryStore store, List<BinaryEntityStoreTocEntry> entries, BinaryBufferPool bufferPool, ScheduledTaskHandle? initHandle = null)
-    {
-        public static async Task<BinaryEntityStoreToc> CreateAsync(string path, BinaryBufferPool bufferPool, BinaryStore entityStore, Scheduler scheduler)
+        public async Task<Guid> AddAsync(object entity, CancellationToken cancellationToken = default)
         {
-            var store = new BinaryStore(path, bufferPool);
-            if (store.Size == 0) {
-                if (entityStore.Size == 0) {
-                    return new BinaryEntityStoreToc(store, [], bufferPool);
+            ArgumentNullException.ThrowIfNull(entity);
+            var id = Guid.NewGuid();
+            await AddAsync(id, entity, cancellationToken).ConfigureAwait(false);
+            return id;
+        }
+
+        public async Task AddAsync(Guid id, object entity, CancellationToken cancellationToken = default)
+        {
+            if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
+            ArgumentNullException.ThrowIfNull(entity);
+            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            await using var writeHandle = await entityLocks.EnterWriteAsync(id, cancellationToken).ConfigureAwait(false);
+            if (TryGetActiveEntry(id, out _)) {
+                throw new InvalidOperationException($"Entity with id '{id}' already exists in the store.");
+            }
+            await WriteEntityAsync(id, entity, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task UpdateAsync(Guid id, object entity, CancellationToken cancellationToken = default)
+        {
+            if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
+            ArgumentNullException.ThrowIfNull(entity);
+            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            await using var writeHandle = await entityLocks.EnterWriteAsync(id, cancellationToken).ConfigureAwait(false);
+            if (!TryGetActiveEntry(id, out var existing)) {
+                throw new InvalidOperationException($"Entity with id '{id}' does not exist.");
+            }
+
+            await store.MarkAsNotUsedAsync(existing.Offset, cancellationToken).ConfigureAwait(false);
+            toc.Remove(id);
+            await WriteEntityAsync(id, entity, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
+            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            await using var writeHandle = await entityLocks.EnterWriteAsync(id, cancellationToken).ConfigureAwait(false);
+            if (!TryGetActiveEntry(id, out var existing)) {
+                return;
+            }
+
+            await store.MarkAsNotUsedAsync(existing.Offset, cancellationToken).ConfigureAwait(false);
+            toc.Remove(id);
+        }
+
+        public async Task<T?> GetAsync<T>(Guid id, CancellationToken cancellationToken = default)
+            where T : class
+            => (T?)await GetAsync(id, typeof(T), cancellationToken);
+
+        public async Task<object?> GetAsync(Guid id, Type type, CancellationToken cancellationToken = default)
+        {
+            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            await using var readHandle = await entityLocks.EnterReadAsync(id, cancellationToken).ConfigureAwait(false);
+            if (TryGetActiveEntry(id, out var entry)) {
+                using var record = await store.ReadAsync(entry.Offset, cancellationToken).ConfigureAwait(false);
+                return serializer!.Deserialize(type, record.Buffer);
+            }
+            return default;
+        }
+
+        public void Dispose()
+        {
+            DisposeAsyncCore().GetAwaiter().GetResult();
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
+            GC.SuppressFinalize(this);
+        }
+
+        private async ValueTask DisposeAsyncCore()
+        {
+            if (disposed) {
+                return;
+            }
+            disposed = true;
+            try {
+                await initializationTask.ConfigureAwait(false);
+            }
+            catch {
+                // Ignore initialization failures during dispose.
+            }
+
+            store.Dispose();
+            toc.Dispose();
+            entityLocks.Dispose();
+            appendLock.Dispose();
+            await scheduler.DisposeAsync().ConfigureAwait(false);
+        }
+
+        private async Task InitializeAsync(ScheduledTaskHandle initHandle, BinaryBufferPool bufferPool)
+        {
+            try {
+                await initHandle.Completion.ConfigureAwait(false);
+                using var entry = await store.ReadAsync(toc.Header.Offset).ConfigureAwait(false);
+                header = await BinaryEntityStoreHeader.ReadFromAsync(entry.Buffer).ConfigureAwait(false) ?? throw BinaryEntityStoreEngineInitializationException.HeaderFailed();
+                if (header.SerializerType == BsonSerializer.ARID) {
+                    serializer = new BsonSerializer(bufferPool);
                 }
                 else {
-                    var entries = new List<BinaryEntityStoreTocEntry>();
-                    var initHandle = scheduler.Schedule(async state => {
-                        if (state is null) throw new ArgumentNullException(nameof(state));
-                        var (entries, entityStore, bufferPool) = ((List<BinaryEntityStoreTocEntry>, BinaryStore, BinaryBufferPool)) state;
-
-                        
-                    }, (entries, entityStore, bufferPool));
-
-                    return new BinaryEntityStoreToc(store, entries, bufferPool, initHandle);
+                    throw new ArgumentOutOfRangeException(nameof(header.SerializerType), header.SerializerType, null);
                 }
             }
-            else {
-                var entries = new List<BinaryEntityStoreTocEntry>();
-                var offset = 0;
-                while (offset < store.Size) {
-                    
+            finally {
+                await initHandle.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
+        private Task EnsureInitializedAsync(CancellationToken cancellationToken)
+            => initializationTask.WaitAsync(cancellationToken);
+
+        private bool TryGetActiveEntry(Guid id, [MaybeNullWhen(false)] out BinaryEntityStoreTocEntry entry)
+        {
+            if (toc.TryGetEntry(id, out entry) && entry is not null && !entry.IsFree) {
+                return true;
+            }
+            entry = null;
+            return false;
+        }
+
+        private async Task WriteEntityAsync(Guid id, object entity, CancellationToken cancellationToken)
+        {
+            var payload = SerializeEntity(entity);
+            var metadata = new BinaryEntityStoreRecordMetadata(id, header!.Version);
+            long offset;
+            await appendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try {
+                offset = store.Size;
+                using (var buffer = await store.WriteAsync(offset, payload.Length, metadata, cancellationToken).ConfigureAwait(false)) {
+                    await buffer.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
                 }
-                return new BinaryEntityStoreToc(store, entries, bufferPool);
             }
-        }
-    }
-
-    public class BinaryEntityStoreHeader(uint version = 1, ARID? serializerType = null)
-    {
-        private const int V1Size = 14;
-        public int Size => V1Size;
-        public uint Version { get; } = version;
-        public ARID SerializerType { get; } = serializerType ?? Serialization.Bson.BsonSerializer.ARID;
-
-        public async Task WriteToAsync(BinaryWriteBuffer buffer, CancellationToken cancellationToken = default)
-        {
-            var space = await buffer.WriteAsync(Size, cancellationToken);
-            BinaryInformation.UInt32.Converter.Convert(Version, space.Span[..4]);
-            SerializerType.WriteTo(space.Span.Slice(4, 10));
-        }
-
-        public static async Task<BinaryEntityStoreHeader> ReadFromAsync(BinaryReadBuffer buffer, CancellationToken cancellationToken = default)
-        {
-            var space = await buffer.ReadAsync(V1Size, cancellationToken);
-            var version = BinaryInformation.UInt32.Converter.Convert(space.Span[..4]);
-            var serializerType = ARID.ReadFrom(space.Span.Slice(4, 10));
-            return new BinaryEntityStoreHeader(version, serializerType);
-        }
-    }
-    
-
-    public class BinaryEntityStoreTocEntry
-    {
-        public long Offset { get; set; }
-        public int Size { get; set; }
-    }
-
-    public class BinaryEntityStoreFileSystem
-    {
-        private readonly List<BinaryEntityStoreFile> indexes;
-        public BinaryEntityStoreFileSystem(string path)
-        {
-            Store = new BinaryEntityStoreFile(path);
-            Folder = System.IO.Path.ChangeExtension(path, ".ar.cache");
-            if (System.IO.Directory.Exists(Folder)) {
-                indexes = [.. System.IO.Directory.GetFiles(Folder, "*.index").Select(f => new BinaryEntityStoreFile(f))];
+            finally {
+                appendLock.Release();
             }
-            else {
-                System.IO.Directory.CreateDirectory(Folder);
-                indexes = [];
-            }
-            TableOfContent = new BinaryEntityStoreFile(System.IO.Path.Combine(Folder, "ar.toc"));
+            using var written = await store.ReadAsync(offset, cancellationToken).ConfigureAwait(false);
+            toc.Upsert(id, offset, written.Header.Size, isFree: false);
         }
 
-        public BinaryEntityStoreFile Store { get; }
-        private string Folder { get; }
-        public BinaryEntityStoreFile TableOfContent { get; }
-        public IReadOnlyList<BinaryEntityStoreFile> Indexes => indexes;
+        private byte[] SerializeEntity(object entity)
+        {
+            var serializerInstance = serializer ?? throw new InvalidOperationException("Binary entity store engine has not been initialized yet.");
+            using var memoryStream = new MemoryStream();
+            using var binaryStream = BinaryStream.MemoryStream(memoryStream);
+            using (var buffer = bufferPool.AcquireWriteBuffer(binaryStream)) {
+                serializerInstance.Serialize(buffer, entity);
+            }
+            return memoryStream.ToArray();
+        }
     }
 }

@@ -10,20 +10,12 @@ namespace Aeter.Ratio.Serialization
     public static class SerializerExtensions
     {
         public static void Serialize(this ISerializer serializer, Stream stream, object graph)
-        {
-            serializer.Serialize(BinaryStream.Passthrough(stream), graph);
-        }
+            => serializer.Serialize(BinaryStream.Passthrough(stream), graph);
         public static object? Deserialize(this ISerializer serializer, Type type, Stream stream)
-        {
-            return serializer.Deserialize(type, BinaryStream.Passthrough(stream));
-        }
+            => serializer.Deserialize(type, BinaryStream.Passthrough(stream));
         public static void Serialize<T>(this ISerializer serializer, Stream stream, T graph)
-        {
-            serializer.Serialize<T>(BinaryStream.Passthrough(stream), graph);
-        }
+            => serializer.Serialize<T>(BinaryStream.Passthrough(stream), graph);
         public static T Deserialize<T>(this ISerializer serializer, Stream stream)
-        {
-            return serializer.Deserialize<T>(BinaryStream.Passthrough(stream));
-        }
+            => serializer.Deserialize<T>(BinaryStream.Passthrough(stream));
     }
 }

@@ -152,7 +152,7 @@ namespace Aeter.Ratio.IO
             public ParallellFileStreamImpl(string path)
             {
                 Stream = new FileStream(path,
-                    FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite,
+                    FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite,
                     bufferSize: 1, // buffer not used by RandomAccess
                     FileOptions.Asynchronous | FileOptions.RandomAccess);
             }

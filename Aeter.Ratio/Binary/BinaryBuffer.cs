@@ -20,8 +20,9 @@ namespace Aeter.Ratio.Binary
         /// Gets the rented memory backing the buffer. Use this when low-level APIs need access to the full block.
         /// Prefer <see cref="Span"/> for stack-only operations when performance matters.
         /// </summary>
-        public Memory<byte> Buffer { get; }
         private IBinaryStream Stream { get; }
+
+        private readonly Memory<byte> fixedBuffer;
         private long streamOffset;
         private int streamLength;
         private long streamPosition;
@@ -30,7 +31,7 @@ namespace Aeter.Ratio.Binary
         /// Gets a span view of <see cref="Buffer"/>. Prefer this over <see cref="Buffer"/> when you do not need
         /// to box the memory as it avoids heap allocations.
         /// </summary>
-        protected Memory<byte> Memory => _handle.Memory;
+        public Memory<byte> Memory => fixedBuffer.IsEmpty ? _handle.Memory : fixedBuffer;
         /// <summary>
         /// Gets the span that points at the current memory region.
         /// </summary>
@@ -50,7 +51,7 @@ namespace Aeter.Ratio.Binary
         /// </summary>
         public BinaryBuffer(Memory<byte> buffer, IBinaryStream stream, long streamOffset, int streamLength)
         {
-            Buffer = buffer;
+            fixedBuffer = buffer;
             Stream = stream;
             this.streamOffset = streamOffset;
             this.streamLength = streamLength;
@@ -64,6 +65,7 @@ namespace Aeter.Ratio.Binary
         /// </summary>
         public BinaryBuffer(BinaryBufferPool pool, BinaryBufferPool.BinaryMemoryHandle handle, IBinaryStream stream, long streamOffset, int streamLength)
         {
+            fixedBuffer = Memory<byte>.Empty;
             Stream = stream;
             this.streamOffset = streamOffset;
             this.streamLength = streamLength;

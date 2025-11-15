@@ -3,12 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 namespace Aeter.Ratio.Binary
 {
-    public class BinaryStoreReadAllArgs(BinaryStore store, long offset, byte type, int size, object? state)
+    public class BinaryStoreReadAllArgs(BinaryStore store, long offset, byte type, int size, BinaryReadBuffer buffer, object? state)
     {
         public BinaryStore Store { get; } = store;
         public long Offset { get; } = offset;
         public byte Type { get; } = type;
         public int Size { get; } = size;
+        public BinaryReadBuffer Buffer { get; } = buffer;
         public object? State { get; } = state;
+        public bool IsFree => BinaryStoreFlags.IsFree == Type;
     }
 }

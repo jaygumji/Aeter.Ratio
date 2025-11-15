@@ -57,14 +57,14 @@ namespace Aeter.Ratio.Binary
                 throw new ArgumentException("Written length must be a positive number");
             }
 
-            header.Memory.Span[0] = 255;
+            header.Memory.Span[0] = BinaryStoreFlags.IsFree;
             await stream.WriteAsync(offset, header.Memory[0..1], cancellationToken);
         }
 
         public async Task MarkAsNotUsedAsync(long offset, int length, CancellationToken cancellationToken = default)
         {
             using var header = bufferPool.Acquire(HeaderLength);
-            header.Memory.Span[0] = 255;
+            header.Memory.Span[0] = BinaryStoreFlags.IsFree;
             if (!BitConverter.TryWriteBytes(header.Memory.Span[1..], length + HeaderLength)) {
                 throw new ArgumentException("Unexpected error when creating header");
             }
@@ -99,9 +99,10 @@ namespace Aeter.Ratio.Binary
                 var type = space.Span[0];
                 var size = BitConverter.ToInt32(space.Span[1..]);
 
-                var args = new BinaryStoreReadAllArgs(this, offset, type, size, state);
+                var args = new BinaryStoreReadAllArgs(this, offset, type, size, buffer, state);
                 await callback.Invoke(args);
                 offset += size;
+                await buffer.SkipToAsync(offset, cancellationToken);
             }
         }
 

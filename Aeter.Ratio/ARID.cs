@@ -61,7 +61,7 @@ namespace Aeter.Ratio
             _value.AsSpan().CopyTo(destination);
         }
 
-        public void WriteTo(Span<byte> destination)
+        public int WriteTo(Span<byte> destination)
         {
             var required = Encoding.UTF8.GetByteCount(_value);
             if (destination.Length < required) {
@@ -69,6 +69,7 @@ namespace Aeter.Ratio
             }
 
             Encoding.UTF8.GetBytes(_value, destination);
+            return required;
         }
 
         private static string NormalizeAndValidate(string value)
