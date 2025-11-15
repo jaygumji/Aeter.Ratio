@@ -199,5 +199,55 @@ namespace Aeter.Ratio.Binary
             }
             return memoryStream.ToArray();
         }
+
+        public async Task ShrinkAsync(CancellationToken cancellationToken = default)
+        {
+            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            await appendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try {
+                var entries = toc.SnapshotEntries();
+                if (entries.Length == 0) {
+                    return;
+                }
+
+                Array.Sort(entries, static (x, y) => x.Offset.CompareTo(y.Offset));
+
+                var header = toc.Header;
+                var nextOffset = header.Offset + header.Size;
+
+                foreach (var entry in entries) {
+                    if (entry.Key == Guid.Empty) {
+                        nextOffset = entry.Offset + entry.Size;
+                        continue;
+                    }
+
+                    if (entry.IsFree) {
+                        continue;
+                    }
+
+                    if (entry.Offset == nextOffset) {
+                        nextOffset += entry.Size;
+                        continue;
+                    }
+
+                    await using var writeHandle = await entityLocks.EnterWriteAsync(entry.Key, cancellationToken).ConfigureAwait(false);
+                    using var record = await store.ReadAsync(entry.Offset, cancellationToken).ConfigureAwait(false);
+                    var payloadLength = record.Header.PayloadLength;
+                    var payload = new byte[payloadLength];
+                    await record.Buffer.CopyToAsync(payload, cancellationToken).ConfigureAwait(false);
+
+                    using (var buffer = await store.WriteAsync(nextOffset, payloadLength, record.Header.Metadata, cancellationToken).ConfigureAwait(false)) {
+                        await buffer.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    await store.MarkAsNotUsedAsync(entry.Offset, entry.Size, record.Header.Metadata, cancellationToken).ConfigureAwait(false);
+                    toc.Upsert(entry.Key, nextOffset, entry.Size, isFree: false);
+                    nextOffset += entry.Size;
+                }
+            }
+            finally {
+                appendLock.Release();
+            }
+        }
     }
 }

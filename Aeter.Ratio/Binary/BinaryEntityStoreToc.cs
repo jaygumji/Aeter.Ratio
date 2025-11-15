@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -94,6 +95,13 @@ namespace Aeter.Ratio.Binary
         {
             lock (syncRoot) {
                 return entries.Remove(key);
+            }
+        }
+
+        internal BinaryEntityStoreTocEntry[] SnapshotEntries()
+        {
+            lock (syncRoot) {
+                return entries.Values.ToArray();
             }
         }
 

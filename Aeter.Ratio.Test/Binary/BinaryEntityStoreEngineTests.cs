@@ -61,6 +61,31 @@ namespace Aeter.Ratio.Test.Binary
             Assert.Null(stored);
         }
 
+        [Fact]
+        public async Task ShrinkAsync_CompactsFreeSpace()
+        {
+            var engine = await CreateEngineInternalAsync();
+            await using var scopedEngine = engine;
+
+            var first = await scopedEngine.AddAsync(new SampleEntity { Name = "first", Value = 1 });
+            var second = await scopedEngine.AddAsync(new SampleEntity { Name = "second", Value = 2 });
+            var third = await scopedEngine.AddAsync(new SampleEntity { Name = "third", Value = 3 });
+
+            await scopedEngine.DeleteAsync(second);
+
+            var beforeShrink = await scopedEngine.GetAsync<SampleEntity>(third);
+            Assert.NotNull(beforeShrink);
+
+            await scopedEngine.ShrinkAsync();
+
+            var afterShrink = await scopedEngine.GetAsync<SampleEntity>(third);
+            Assert.NotNull(afterShrink);
+            Assert.Equal(3, afterShrink!.Value);
+
+            var missingSecond = await scopedEngine.GetAsync<SampleEntity>(second);
+            Assert.Null(missingSecond);
+        }
+
         private async Task<(BinaryEntityStoreEngine Engine, Guid EntityId)> CreateEngineWithEntityAsync(SampleEntity entity)
         {
             var engine = await CreateEngineInternalAsync();
