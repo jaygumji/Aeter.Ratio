@@ -49,7 +49,7 @@ namespace Aeter.Ratio.Serialization.Json
         private void Write(string value)
         {
             var bytes = _encoding.BaseEncoding.GetBytes(value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            _writeBuffer.Write(bytes);
         }
 
         private void WriteValuePrefix(VisitArgs args)

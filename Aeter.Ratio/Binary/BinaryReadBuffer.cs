@@ -9,24 +9,40 @@ using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary
 {
+    /// <summary>
+    /// Stream-oriented buffer that provides efficient random-access reads over <see cref="IBinaryReadStream"/>.
+    /// </summary>
     public class BinaryReadBuffer : BinaryBuffer
     {
         private readonly IBinaryReadStream stream;
 
+        /// <summary>
+        /// Gets the number of valid bytes currently cached in the buffer. A value of -1 means it has not been filled yet.
+        /// </summary>
         public int Length { get; private set; } = -1;
 
+        /// <summary>
+        /// Creates a reader that rents its backing memory from a pool.
+        /// Use this overload when buffers are short-lived or large to reduce allocations.
+        /// </summary>
         public BinaryReadBuffer(BinaryBufferPool poolHandle, BinaryBufferPool.BinaryMemoryHandle handle, IBinaryReadStream stream, long streamOffset = 0, int streamLength = int.MaxValue)
             : base(poolHandle, handle, stream, streamOffset, streamLength)
         {
             this.stream = stream;
         }
 
+        /// <summary>
+        /// Creates a reader backed by a fixed buffer. Useful for tests or single-use reads.
+        /// </summary>
         public BinaryReadBuffer(int size, IBinaryReadStream stream, long streamOffset = 0, int streamLength = int.MaxValue)
             : base(new byte[size], stream, streamOffset, streamLength)
         {
             this.stream = stream;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the buffer has reached the end of the permitted stream range.
+        /// </summary>
         public bool IsEndOfStream => Position == Length && Length < Size;
 
         private void EnsureInitialized()
@@ -38,12 +54,18 @@ namespace Aeter.Ratio.Binary
             if (Length < 0) await RefillBufferAsync(cancellationToken: cancellationToken);
         }
 
+        /// <summary>
+        /// Reads the next byte from the buffer, refilling it synchronously if needed. Prefer this in tight loops that already operate synchronously.
+        /// </summary>
         public byte ReadByte()
         {
             RefillBuffer();
             return Span[Position++];
         }
 
+        /// <summary>
+        /// Reads the next byte asynchronously. Use this inside async flows to avoid blocking threads.
+        /// </summary>
         public async Task<byte> ReadByteAsync(CancellationToken cancellationToken = default)
         {
             await RefillBufferAsync(cancellationToken: cancellationToken);
@@ -108,6 +130,9 @@ namespace Aeter.Ratio.Binary
             }
         }
 
+        /// <summary>
+        /// Ensures at least <paramref name="length"/> bytes are buffered synchronously. Use when subsequent reads happen synchronously.
+        /// </summary>
         public void RequestSpace(int length)
         {
             if (Length >= 0 && Length - Position >= length) {
@@ -130,6 +155,9 @@ namespace Aeter.Ratio.Binary
             }
         }
 
+        /// <summary>
+        /// Ensures at least <paramref name="length"/> bytes are buffered asynchronously. Use when the caller is already in an async method.
+        /// </summary>
         public async Task RequestSpaceAsync(int length, CancellationToken cancellationToken = default)
         {
             if (Length >= 0 && Length - Position >= length) {
@@ -152,6 +180,9 @@ namespace Aeter.Ratio.Binary
             }
         }
 
+        /// <summary>
+        /// Reads <paramref name="length"/> bytes synchronously and advances the position. Use this in synchronous code paths for best throughput.
+        /// </summary>
         public ReadOnlySpan<byte> Read(int length)
         {
             RequestSpace(length);
@@ -160,6 +191,9 @@ namespace Aeter.Ratio.Binary
             return span;
         }
 
+        /// <summary>
+        /// Reads <paramref name="length"/> bytes asynchronously and advances the position. Prefer this overload when awaiting I/O already.
+        /// </summary>
         public async ValueTask<ReadOnlyMemory<byte>> ReadAsync(int length, CancellationToken cancellationToken = default)
         {
             await RequestSpaceAsync(length, cancellationToken);
@@ -168,10 +202,19 @@ namespace Aeter.Ratio.Binary
             return span;
         }
 
+        /// <summary>
+        /// Peeks a byte at the current position.
+        /// </summary>
         public byte PeekByte() => PeekByte(0);
 
+        /// <summary>
+        /// Asynchronously peeks a byte at the current position without advancing.
+        /// </summary>
         public ValueTask<byte> PeekByteAsync(CancellationToken cancellationToken = default) => PeekByteAsync(0, cancellationToken);
 
+        /// <summary>
+        /// Peeks a byte at the specified <paramref name="offset"/> from the current position.
+        /// </summary>
         public byte PeekByte(int offset)
         {
             EnsureInitialized();
@@ -188,6 +231,9 @@ namespace Aeter.Ratio.Binary
             return Span[offsetPosition];
         }
 
+        /// <summary>
+        /// Asynchronously peeks a byte at the specified <paramref name="offset"/> from the current position.
+        /// </summary>
         public async ValueTask<byte> PeekByteAsync(int offset, CancellationToken cancellationToken = default)
         {
             await EnsureInitializedAsync(cancellationToken);
@@ -204,16 +250,25 @@ namespace Aeter.Ratio.Binary
             return Span[offsetPosition];
         }
 
+        /// <summary>
+        /// Copies the remaining data to <paramref name="destArr"/> synchronously. Prefer this for small payloads.
+        /// </summary>
         public void CopyTo(byte[] destArr)
         {
             CopyTo(destArr, 0, destArr.Length);
         }
 
+        /// <summary>
+        /// Copies the remaining data to <paramref name="destArr"/> asynchronously. Use this when the copy might block on I/O.
+        /// </summary>
         public Task CopyToAsync(byte[] destArr, CancellationToken cancellationToken = default)
         {
             return CopyToAsync(destArr, 0, destArr.Length, cancellationToken);
         }
 
+        /// <summary>
+        /// Copies <paramref name="length"/> bytes into <paramref name="destArr"/> at <paramref name="destOffset"/> synchronously.
+        /// </summary>
         public void CopyTo(byte[] destArr, int destOffset, int length)
         {
             if (destArr.Length < length) throw new ArgumentException("Insufficient length of array", nameof(destArr));
@@ -222,6 +277,9 @@ namespace Aeter.Ratio.Binary
             Advance(length);
         }
 
+        /// <summary>
+        /// Copies <paramref name="length"/> bytes into <paramref name="destArr"/> asynchronously.
+        /// </summary>
         public async Task CopyToAsync(byte[] destArr, int destOffset, int length, CancellationToken cancellationToken = default)
         {
             if (destArr.Length < length) throw new System.ArgumentException("Insufficient length of array", nameof(destArr));
@@ -230,17 +288,46 @@ namespace Aeter.Ratio.Binary
             await AdvanceAsync(length, cancellationToken);
         }
 
+        /// <summary>
+        /// Advances the in-buffer position synchronously. Only use this directly if <see cref="RequestSpace"/> has been called for the same length.
+        /// </summary>
         public void Advance(int length)
         {
             RefillBuffer();
             Position += length;
         }
 
+        /// <summary>
+        /// Advances the position asynchronously. Use this alongside <see cref="RequestSpaceAsync"/> to remain on the async path.
+        /// </summary>
         public async Task AdvanceAsync(int length, CancellationToken cancellationToken = default)
         {
             await RefillBufferAsync(cancellationToken: cancellationToken);
             Position += length;
         }
 
+        /// <summary>
+        /// Skips <paramref name="length"/> bytes, requesting additional space as needed.
+        /// Prefer this helper for large skips instead of manual Request/Advance loops.
+        /// </summary>
+        public async Task SkipAsync(int length, CancellationToken cancellationToken = default)
+        {
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
+
+            var remaining = length;
+            while (remaining > 0) {
+                if (Length < 0 || Position == Length) {
+                    await RefillBufferAsync(require: false, cancellationToken: cancellationToken);
+                    if (Length == Position) {
+                        throw new EndOfStreamException();
+                    }
+                }
+
+                var available = Length - Position;
+                var consume = Math.Min(available, remaining);
+                Position += consume;
+                remaining -= consume;
+            }
+        }
     }
 }

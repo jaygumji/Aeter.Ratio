@@ -15,6 +15,7 @@ namespace Aeter.Ratio.Serialization.Bson
 
         public IFieldNameResolver FieldNameResolver { get; set; } = new CamelCaseFieldNameResolver();
         public BsonEncoding Encoding { get; set; } = BsonEncoding.UTF8;
+        public static readonly ARID ARID = new("bson");
 
         public BsonSerializer() : this(BinaryBufferPool.Default)
         {

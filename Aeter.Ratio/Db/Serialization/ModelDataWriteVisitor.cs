@@ -179,8 +179,7 @@ namespace Aeter.Ratio.Db.Serialization
             }
 
             _writeBuffer.WriteByte((Byte) BinaryInformation.Boolean.FixedLength);
-            var bytes = BinaryInformation.Boolean.Converter.Convert(value.Value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            BinaryInformation.Boolean.Converter.Convert(value.Value, _writeBuffer);
         }
 
         public void VisitValue(float? value, VisitArgs args)
@@ -195,8 +194,7 @@ namespace Aeter.Ratio.Db.Serialization
             }
 
             _writeBuffer.WriteByte((Byte) BinaryInformation.Single.FixedLength);
-            var bytes = BinaryInformation.Single.Converter.Convert(value.Value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            BinaryInformation.Single.Converter.Convert(value.Value, _writeBuffer);
         }
 
         public void VisitValue(double? value, VisitArgs args)
@@ -211,8 +209,7 @@ namespace Aeter.Ratio.Db.Serialization
             }
 
             _writeBuffer.WriteByte((Byte) BinaryInformation.Double.FixedLength);
-            var bytes = BinaryInformation.Double.Converter.Convert(value.Value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            BinaryInformation.Double.Converter.Convert(value.Value, _writeBuffer);
         }
 
         public void VisitValue(decimal? value, VisitArgs args)
@@ -226,8 +223,7 @@ namespace Aeter.Ratio.Db.Serialization
             }
 
             _writeBuffer.WriteByte((Byte) BinaryInformation.Decimal.FixedLength);
-            var bytes = BinaryInformation.Decimal.Converter.Convert(value.Value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            BinaryInformation.Decimal.Converter.Convert(value.Value, _writeBuffer);
         }
 
         public void VisitValue(TimeSpan? value, VisitArgs args)
@@ -300,7 +296,7 @@ namespace Aeter.Ratio.Db.Serialization
 
             _writeBuffer.WriteByte((byte) BinaryInformation.Guid.FixedLength);
             var bytes = BinaryInformation.Guid.Converter.Convert(value.Value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            _writeBuffer.Write(bytes);
         }
 
         public void VisitValue(byte[]? value, VisitArgs args)
@@ -319,7 +315,7 @@ namespace Aeter.Ratio.Db.Serialization
                 _writeBuffer.WriteByte(BinaryZPacker.VariabelLength);
                 BinaryV32Packer.PackU(_writeBuffer, (uint) value.Length);
             }
-            _writeBuffer.Write(value, 0, value.Length);
+            _writeBuffer.Write(value);
         }
     }
 }

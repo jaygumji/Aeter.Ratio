@@ -35,7 +35,7 @@ namespace Aeter.Ratio.Binary
 
         public long Size => stream.Length;
 
-        public async Task<BinaryWriteBuffer> GetWriteSpaceAsync(long offset, int length, CancellationToken cancellationToken = default)
+        public async Task<BinaryWriteBuffer> WriteAsync(long offset, int length, CancellationToken cancellationToken = default)
         {
             using var header = bufferPool.Acquire(HeaderLength);
             header.Memory.Span[0] = 1;
@@ -47,24 +47,28 @@ namespace Aeter.Ratio.Binary
             return bufferPool.AcquireWriteBuffer(stream, offset + HeaderLength, length);
         }
 
-        public async ValueTask<long> WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
-        {
-            var offset = stream.Length;
-            await WriteAsync(offset, data, cancellationToken);
-            return offset;
-        }
-
-        public async ValueTask WriteAsync(long offset, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
+        public async Task MarkAsNotUsedAsync(long offset, CancellationToken cancellationToken = default)
         {
             using var header = bufferPool.Acquire(HeaderLength);
-            header.Memory.Span[0] = 1;
-            if (!BitConverter.TryWriteBytes(header.Memory.Span[1..], data.Length + HeaderLength)) {
+            await stream.ReadAsync(offset, header.Memory[..5], cancellationToken);
+
+            var length = BitConverter.ToInt32(header.Memory.Span[1..5]);
+            if (!(length > 0)) {
+                throw new ArgumentException("Written length must be a positive number");
+            }
+
+            header.Memory.Span[0] = 255;
+            await stream.WriteAsync(offset, header.Memory[0..1], cancellationToken);
+        }
+
+        public async Task MarkAsNotUsedAsync(long offset, int length, CancellationToken cancellationToken = default)
+        {
+            using var header = bufferPool.Acquire(HeaderLength);
+            header.Memory.Span[0] = 255;
+            if (!BitConverter.TryWriteBytes(header.Memory.Span[1..], length + HeaderLength)) {
                 throw new ArgumentException("Unexpected error when creating header");
             }
             await stream.WriteAsync(offset, header.Memory, cancellationToken);
-            await stream.WriteAsync(offset + HeaderLength, data, cancellationToken);
-            if (_flushOffset > offset)
-                _flushOffset = offset - 1;
         }
 
         private async Task EnsureFlushedAsync(long offset, CancellationToken cancellationToken = default)
@@ -83,7 +87,25 @@ namespace Aeter.Ratio.Binary
             }
         }
 
-        public async Task<BinaryReadBuffer> GetReadSpaceAsync(long offset, CancellationToken cancellationToken = default)
+        public async Task ReadAllAsync(Func<BinaryStoreReadAllArgs, Task> callback, object? state = null, CancellationToken cancellationToken = default)
+        {
+            var buffer = bufferPool.AcquireReadBuffer(stream);
+
+            var offset = 0L;
+            while (offset < Size) {
+                await EnsureFlushedAsync(offset, cancellationToken);
+
+                var space = await buffer.ReadAsync(5);
+                var type = space.Span[0];
+                var size = BitConverter.ToInt32(space.Span[1..]);
+
+                var args = new BinaryStoreReadAllArgs(this, offset, type, size, state);
+                await callback.Invoke(args);
+                offset += size;
+            }
+        }
+
+        public async Task<BinaryReadBuffer> ReadAsync(long offset, CancellationToken cancellationToken = default)
         {
             await EnsureFlushedAsync(offset, cancellationToken);
 
@@ -94,21 +116,6 @@ namespace Aeter.Ratio.Binary
             var size = BitConverter.ToInt32(header.Memory.Span[1..]);
 
             return bufferPool.AcquireReadBuffer(stream, offset + HeaderLength, size - HeaderLength);
-        }
-
-        public async Task<Memory<byte>> ReadAsync(long offset, CancellationToken cancellationToken = default)
-        {
-            await EnsureFlushedAsync(offset, cancellationToken);
-
-            using var header = bufferPool.Acquire(HeaderLength);
-            await stream.ReadAsync(offset, header.Memory, cancellationToken);
-
-            var type = header.Memory.Span[0];
-            var size = BitConverter.ToInt32(header.Memory.Span[1..]);
-
-            var buffer = new byte[size - HeaderLength];
-            await stream.ReadAsync(offset + HeaderLength, buffer, cancellationToken);
-            return buffer;
         }
 
         public void Dispose()

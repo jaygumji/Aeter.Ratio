@@ -110,7 +110,7 @@ namespace Aeter.Ratio.IO
         private void Write<T>(IBinaryInformation<T> info, T value)
         {
             var bytes = info.Converter.Convert(value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            _writeBuffer.Write(bytes);
         }
 
         /// <inheritdoc />
@@ -197,7 +197,7 @@ namespace Aeter.Ratio.IO
             ArgumentNullException.ThrowIfNull(value);
 
             var bytes = _encoding.GetBytes(value);
-            _writeBuffer.Write(bytes, 0, bytes.Length);
+            _writeBuffer.Write(bytes);
         }
 
         /// <inheritdoc />
@@ -211,7 +211,7 @@ namespace Aeter.Ratio.IO
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            _writeBuffer.Write(value, 0, value.Length);
+            _writeBuffer.Write(value);
         }
 
     }
