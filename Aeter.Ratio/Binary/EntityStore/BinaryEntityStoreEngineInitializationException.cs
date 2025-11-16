@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     public class BinaryEntityStoreEngineInitializationException : Exception
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     public class BinaryEntityStoreFileSystem
     {

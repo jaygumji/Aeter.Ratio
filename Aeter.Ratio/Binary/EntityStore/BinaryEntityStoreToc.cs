@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     public sealed class BinaryEntityStoreToc : IDisposable
     {

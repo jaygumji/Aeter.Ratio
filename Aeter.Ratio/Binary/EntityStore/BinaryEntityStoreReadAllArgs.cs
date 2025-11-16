@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     /// <summary>
     /// Arguments passed to <see cref="BinaryEntityStore.ReadAllAsync(Func{BinaryEntityStoreReadAllArgs, Task}, object?, CancellationToken)"/>.

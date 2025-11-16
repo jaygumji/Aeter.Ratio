@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     public class BinaryEntityStoreHeader(uint version = 1, ARID? serializerType = null)
     {

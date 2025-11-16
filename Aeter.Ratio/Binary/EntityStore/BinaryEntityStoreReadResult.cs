@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     /// <summary>
     /// Represents the result of <see cref="BinaryEntityStore.ReadAsync"/> which couples metadata with a payload buffer.

@@ -329,6 +329,31 @@ namespace Aeter.Ratio.Binary
         }
 
         /// <summary>
+        /// Copies <paramref name="length"/> bytes into <paramref name="writeBuffer"/> asynchronously.
+        /// </summary>
+        public async Task CopyToAsync(BinaryWriteBuffer writeBuffer, int length, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(writeBuffer);
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
+
+            var remaining = length;
+            while (remaining > 0) {
+                if (Length < 0 || Position == Length) {
+                    await RefillBufferAsync(require: false, cancellationToken: cancellationToken);
+                    if (Length == Position) {
+                        throw new EndOfStreamException();
+                    }
+                }
+
+                var available = Math.Min(Length - Position, remaining);
+                await writeBuffer.WriteAsync(Memory.Slice(Position, available), cancellationToken);
+                Position += available;
+                consumed += available;
+                remaining -= available;
+            }
+        }
+
+        /// <summary>
         /// Advances the in-buffer position synchronously. Only use this directly if <see cref="RequestSpace"/> has been called for the same length.
         /// </summary>
         public void Advance(int length)

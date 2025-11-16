@@ -7,9 +7,8 @@ using System.IO;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using Aeter.Ratio.Threading;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     public class BinaryEntityStoreEngine : IDisposable, IAsyncDisposable
     {
@@ -17,21 +16,21 @@ namespace Aeter.Ratio.Binary
         private IEntitySerializer? serializer;
         private readonly BinaryEntityStoreFileSystem fileSystem;
         private readonly BinaryBufferPool bufferPool;
+        private readonly BinaryEntityStoreLockManager lockManager;
         private readonly BinaryEntityStore store;
         private readonly Scheduler scheduler;
         private readonly BinaryEntityStoreToc toc;
-        private readonly ReadExclusiveWriteLock<Guid> entityLocks = new();
-        private readonly SemaphoreSlim appendLock = new(1, 1);
         private readonly Task initializationTask;
         private bool disposed;
 
-        public BinaryEntityStoreEngine(BinaryEntityStoreFileSystem fileSystem, BinaryEntityStore store, BinaryBufferPool bufferPool, Scheduler scheduler, BinaryEntityStoreToc toc, ScheduledTaskHandle initHandle)
+        public BinaryEntityStoreEngine(BinaryEntityStoreFileSystem fileSystem, BinaryEntityStore store, BinaryBufferPool bufferPool, Scheduler scheduler, BinaryEntityStoreToc toc, BinaryEntityStoreLockManager lockManager, ScheduledTaskHandle initHandle)
         {
             this.fileSystem = fileSystem;
             this.store = store;
             this.scheduler = scheduler;
             this.toc = toc;
             this.bufferPool = bufferPool;
+            this.lockManager = lockManager;
             initializationTask = InitializeAsync(initHandle, bufferPool);
         }
 
@@ -41,8 +40,9 @@ namespace Aeter.Ratio.Binary
             var store = new BinaryEntityStore(fileSystem.Store.Path, bufferPool);
             var scheduler = new Scheduler();
             var (toc, initHandle) = await BinaryEntityStoreToc.CreateAsync(fileSystem.TableOfContent.Path, bufferPool, store, scheduler, cancellationToken);
+            var lockManager = new BinaryEntityStoreLockManager();
 
-            return new BinaryEntityStoreEngine(fileSystem, store, bufferPool, scheduler, toc, initHandle);
+            return new BinaryEntityStoreEngine(fileSystem, store, bufferPool, scheduler, toc, lockManager, initHandle);
         }
 
         public async Task<Guid> AddAsync(object entity, CancellationToken cancellationToken = default)
@@ -58,7 +58,7 @@ namespace Aeter.Ratio.Binary
             if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
             ArgumentNullException.ThrowIfNull(entity);
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-            await using var writeHandle = await entityLocks.EnterWriteAsync(id, cancellationToken).ConfigureAwait(false);
+            await using var writeHandle = await lockManager.EnterEntityWriteAsync(id, cancellationToken).ConfigureAwait(false);
             if (TryGetActiveEntry(id, out _)) {
                 throw new InvalidOperationException($"Entity with id '{id}' already exists in the store.");
             }
@@ -70,7 +70,7 @@ namespace Aeter.Ratio.Binary
             if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
             ArgumentNullException.ThrowIfNull(entity);
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-            await using var writeHandle = await entityLocks.EnterWriteAsync(id, cancellationToken).ConfigureAwait(false);
+            await using var writeHandle = await lockManager.EnterEntityWriteAsync(id, cancellationToken).ConfigureAwait(false);
             if (!TryGetActiveEntry(id, out var existing)) {
                 throw new InvalidOperationException($"Entity with id '{id}' does not exist.");
             }
@@ -84,7 +84,7 @@ namespace Aeter.Ratio.Binary
         {
             if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-            await using var writeHandle = await entityLocks.EnterWriteAsync(id, cancellationToken).ConfigureAwait(false);
+            await using var writeHandle = await lockManager.EnterEntityWriteAsync(id, cancellationToken).ConfigureAwait(false);
             if (!TryGetActiveEntry(id, out var existing)) {
                 return;
             }
@@ -100,7 +100,7 @@ namespace Aeter.Ratio.Binary
         public async Task<object?> GetAsync(Guid id, Type type, CancellationToken cancellationToken = default)
         {
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-            await using var readHandle = await entityLocks.EnterReadAsync(id, cancellationToken).ConfigureAwait(false);
+            await using var readHandle = await lockManager.EnterEntityReadAsync(id, cancellationToken).ConfigureAwait(false);
             if (TryGetActiveEntry(id, out var entry)) {
                 using var record = await store.ReadAsync(entry.Offset, cancellationToken).ConfigureAwait(false);
                 return serializer!.Deserialize(type, record.Buffer);
@@ -135,8 +135,7 @@ namespace Aeter.Ratio.Binary
 
             store.Dispose();
             toc.Dispose();
-            entityLocks.Dispose();
-            appendLock.Dispose();
+            lockManager.Dispose();
             await scheduler.DisposeAsync().ConfigureAwait(false);
         }
 
@@ -175,15 +174,11 @@ namespace Aeter.Ratio.Binary
             var payload = SerializeEntity(entity);
             var metadata = new BinaryEntityStoreRecordMetadata(id, header!.Version);
             long offset;
-            await appendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try {
+            await using (var appendHandle = await lockManager.EnterAppendAsync(cancellationToken).ConfigureAwait(false)) {
                 offset = store.Size;
                 using (var buffer = await store.WriteAsync(offset, payload.Length, metadata, cancellationToken).ConfigureAwait(false)) {
                     await buffer.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
                 }
-            }
-            finally {
-                appendLock.Release();
             }
             using var written = await store.ReadAsync(offset, cancellationToken).ConfigureAwait(false);
             toc.Upsert(id, offset, written.Header.Size, isFree: false);
@@ -203,8 +198,7 @@ namespace Aeter.Ratio.Binary
         public async Task ShrinkAsync(CancellationToken cancellationToken = default)
         {
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-            await appendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try {
+            await using (var appendHandle = await lockManager.EnterAppendAsync(cancellationToken).ConfigureAwait(false)) {
                 var entries = toc.SnapshotEntries();
                 if (entries.Length == 0) {
                     return;
@@ -230,23 +224,18 @@ namespace Aeter.Ratio.Binary
                         continue;
                     }
 
-                    await using var writeHandle = await entityLocks.EnterWriteAsync(entry.Key, cancellationToken).ConfigureAwait(false);
+                    await using var writeHandle = await lockManager.EnterEntityWriteAsync(entry.Key, cancellationToken).ConfigureAwait(false);
                     using var record = await store.ReadAsync(entry.Offset, cancellationToken).ConfigureAwait(false);
                     var payloadLength = record.Header.PayloadLength;
-                    var payload = new byte[payloadLength];
-                    await record.Buffer.CopyToAsync(payload, cancellationToken).ConfigureAwait(false);
 
                     using (var buffer = await store.WriteAsync(nextOffset, payloadLength, record.Header.Metadata, cancellationToken).ConfigureAwait(false)) {
-                        await buffer.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
+                        await record.Buffer.CopyToAsync(buffer, payloadLength, cancellationToken).ConfigureAwait(false);
                     }
 
                     await store.MarkAsNotUsedAsync(entry.Offset, entry.Size, record.Header.Metadata, cancellationToken).ConfigureAwait(false);
                     toc.Upsert(entry.Key, nextOffset, entry.Size, isFree: false);
                     nextOffset += entry.Size;
                 }
-            }
-            finally {
-                appendLock.Release();
             }
         }
     }

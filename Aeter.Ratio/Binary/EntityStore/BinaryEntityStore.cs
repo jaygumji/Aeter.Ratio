@@ -7,7 +7,7 @@ using System.Buffers.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     /// <summary>
     /// Binary store that stores per-entity metadata in the header of every block.

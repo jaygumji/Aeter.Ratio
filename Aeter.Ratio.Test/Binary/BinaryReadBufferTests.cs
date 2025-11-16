@@ -67,5 +67,21 @@ namespace Aeter.Ratio.Test.Binary
 
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => buffer.SkipToAsync(5));
         }
+
+        [Fact]
+        public async Task CopyToAsync_WritesDirectlyToBinaryWriteBuffer()
+        {
+            var payload = Enumerable.Range(0, 10).Select(i => (byte)i).ToArray();
+            using var readStream = new MemoryStream(payload);
+            using var writeStream = new MemoryStream();
+            using var readBuffer = new BinaryReadBuffer(3, BinaryStream.MemoryStream(readStream));
+            using var writeBuffer = new BinaryWriteBuffer(4, BinaryStream.MemoryStream(writeStream));
+
+            await readBuffer.CopyToAsync(writeBuffer, payload.Length);
+            await writeBuffer.FlushAsync();
+
+            Assert.Equal(payload, writeStream.ToArray());
+            Assert.Equal(payload.Length, readBuffer.TotalConsumed);
+        }
     }
 }

@@ -4,7 +4,7 @@
 using System;
 using System.Buffers.Binary;
 
-namespace Aeter.Ratio.Binary
+namespace Aeter.Ratio.Binary.EntityStore
 {
     /// <summary>
     /// Versioned metadata stored in each record header.
