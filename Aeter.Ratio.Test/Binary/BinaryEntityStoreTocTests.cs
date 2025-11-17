@@ -28,8 +28,8 @@ namespace Aeter.Ratio.Test.Binary
             using var entityStore = new BinaryEntityStore(GetPath("store.bin"), BinaryBufferPool.Default);
 
             var (toc, initHandle) = await BinaryEntityStoreToc.CreateAsync(tocPath, BinaryBufferPool.Default, entityStore, scheduler);
-            await initHandle.Completion.ConfigureAwait(false);
-            await initHandle.DisposeAsync().ConfigureAwait(false);
+            await initHandle.Completion;
+            await initHandle.DisposeAsync();
 
             var header = toc.Header;
             Assert.Equal(Guid.Empty, header.Key);
@@ -46,8 +46,8 @@ namespace Aeter.Ratio.Test.Binary
             using var entityStore = new BinaryEntityStore(GetPath("store_entries.bin"), BinaryBufferPool.Default);
 
             var (toc, initHandle) = await BinaryEntityStoreToc.CreateAsync(tocPath, BinaryBufferPool.Default, entityStore, scheduler);
-            await initHandle.Completion.ConfigureAwait(false);
-            await initHandle.DisposeAsync().ConfigureAwait(false);
+            await initHandle.Completion;
+            await initHandle.DisposeAsync();
 
             var key = Guid.NewGuid();
             toc.Upsert(key, offset: 42, size: 128, isFree: false);

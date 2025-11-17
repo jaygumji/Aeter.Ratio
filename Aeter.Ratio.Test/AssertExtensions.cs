@@ -11,7 +11,7 @@ namespace Aeter.Ratio.Test
     {
         private static void Fail(string source, string reason)
         {
-            Assert.True(false, string.Concat(source, ": ", reason));
+            Assert.Fail(string.Concat(source, ": ", reason));
         }
 
         public static void Equal<T>(IEnumerable<T>? left, IEnumerable<T>? right)
