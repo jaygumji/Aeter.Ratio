@@ -106,12 +106,15 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             });
         }
 
-        private void GenerateEnumerateContentCode(ILPointer valueParam, LevelType level)
+        private void GenerateEnumerateContentCode(ILPointer valueParam, LevelType level, ILPointer? index = null)
         {
             var type = valueParam.Type!;
             var extType = _typeProvider.Extend(type);
 
             var visitArgs = GetContentVisitArgs(extType, level);
+            if (index is not null) {
+                visitArgs = visitArgs.Call(Members.VisitArgsForIndex, index);
+            }
 
             if (extType.IsValueOrNullableOfValue()) {
                 _il.InvokeMethod(_visitorVariable, Members.VisitorVisitValue[type], valueParam.AsNullable(), visitArgs);
@@ -146,6 +149,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                 GenerateEnumerateCollectionContentCode(extType, collectionLocal);
 
                 _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, collectionLocal, visitArgs);
+
             }
             else {
                 _il.InvokeMethod(_visitorVariable, Members.VisitorVisit, valueParam, visitArgs);
@@ -165,29 +169,31 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
                 _il.ForLoop(0, new ILCallMethodSnippet(collectionParameter, Members.ArrayGetLength, 0), 1,
                     r0 => {
-                        _il.InvokeMethod(_visitorVariable, Members.VisitorVisit, collectionParameter, Members.VisitArgsCollectionInCollection);
+                        _il.InvokeMethod(_visitorVariable, Members.VisitorVisit, collectionParameter, Members.VisitArgsCollectionInCollection.Call(Members.VisitArgsForIndex, r0));
                         _il.ForLoop(0, new ILCallMethodSnippet(collectionParameter, Members.ArrayGetLength, 1), 1,
                             r1 => {
                                 if (arrayTypeInfo.Ranks > 2) {
-                                    _il.InvokeMethod(_visitorVariable, Members.VisitorVisit, collectionParameter, Members.VisitArgsCollectionInCollection);
+                                    _il.InvokeMethod(_visitorVariable, Members.VisitorVisit, collectionParameter, Members.VisitArgsCollectionInCollection.Call(Members.VisitArgsForIndex, r1));
 
                                     _il.ForLoop(0, new ILCallMethodSnippet(collectionParameter, Members.ArrayGetLength, 1), 1,
                                         r2 => GenerateEnumerateContentCode(
                                             new ILCallMethodSnippet(collectionParameter, target.Info.FindMethod("Get"), r0, r1, r2),
-                                            LevelType.CollectionItem));
+                                            LevelType.CollectionItem, r2));
 
-                                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, collectionParameter, Members.VisitArgsCollectionInCollection);
+                                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, collectionParameter, Members.VisitArgsCollectionInCollection.Call(Members.VisitArgsForIndex, r1));
                                 }
                                 else {
-                                    GenerateEnumerateContentCode(new ILCallMethodSnippet(collectionParameter, target.Info.FindMethod("Get"), r0, r1), LevelType.CollectionItem); ;
+                                    GenerateEnumerateContentCode(new ILCallMethodSnippet(collectionParameter, target.Info.FindMethod("Get"), r0, r1), LevelType.CollectionItem, r1);
                                 }
                             });
-                        _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, collectionParameter, Members.VisitArgsCollectionInCollection);
+                        _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, collectionParameter, Members.VisitArgsCollectionInCollection.Call(Members.VisitArgsForIndex, r0));
                     });
             }
             else {
+                var index = _il.NewLocal(typeof(uint));
+                _il.Set(index, (uint)0);
                 _il.Enumerate(collectionParameter,
-                    it => GenerateEnumerateContentCode(it, LevelType.CollectionItem));
+                    it => GenerateEnumerateContentCode(it, LevelType.CollectionItem, index.Set(index.Add((uint)1))));
             }
         }
 

@@ -33,5 +33,7 @@ namespace Aeter.Ratio.Reflection.Emit
             return new ILLocalVariable(local);
         }
 
+        public ILSetVariable Set(ILPointer value) => new(this, value);
+
     }
 }

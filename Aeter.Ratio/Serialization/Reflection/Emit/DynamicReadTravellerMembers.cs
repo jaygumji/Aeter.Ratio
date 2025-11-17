@@ -24,6 +24,8 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
         public readonly ILPointer VisitArgsCollectionInDictionaryKey;
         public readonly ILPointer VisitArgsCollectionInDictionaryValue;
 
+        public readonly MethodInfo VisitArgsForIndex;
+
         public readonly MethodInfo VisitorTryVisit;
         public readonly MethodInfo VisitorLeave;
         public readonly Dictionary<Type, MethodInfo> VisitorTryVisitValue;
@@ -49,15 +51,17 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             VisitArgsCollectionInDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryKey)).AsILPointer();
             VisitArgsCollectionInDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryValue)).AsILPointer();
 
+            VisitArgsForIndex = visitArgsType.FindMethod(nameof(VisitArgs.ForIndex));
+
             var readVisitorType = typeof(IReadVisitor).GetTypeInfo();
-            VisitorTryVisit = readVisitorType.FindMethod("TryVisit");
-            VisitorLeave = readVisitorType.FindMethod("Leave");
+            VisitorTryVisit = readVisitorType.FindMethod(nameof(IReadVisitor.TryVisit));
+            VisitorLeave = readVisitorType.FindMethod(nameof(IReadVisitor.Leave));
 
             VisitorTryVisitValue = new Dictionary<Type, MethodInfo>();
             Nullable = new Dictionary<Type, NullableMembers>();
 
             foreach (var method in readVisitorType.GetMethods()
-                .Where(m => m.Name == "TryVisitValue")) {
+                .Where(m => m.Name == nameof(IReadVisitor.TryVisitValue))) {
 
                 Type valueType = method.GetParameters()[1].ParameterType;
                 if (valueType.IsByRef) valueType = valueType.GetElementType()!;

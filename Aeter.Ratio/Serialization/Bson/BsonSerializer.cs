@@ -4,6 +4,7 @@
 using Aeter.Ratio.Binary;
 using Aeter.Ratio.IO;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Aeter.Ratio.Serialization.Bson
@@ -72,6 +73,12 @@ namespace Aeter.Ratio.Serialization.Bson
         {
             var visitor = new BsonWriteVisitor(Encoding, FieldNameResolver, buffer);
             _engine.Serialize(visitor, graph);
+        }
+
+        public IReadOnlyList<object?> ReadValue(BinaryReadBuffer buffer, string path, Type type)
+        {
+            var reader = new BsonReadVisitor(Encoding, FieldNameResolver, buffer);
+            return reader.FindValue(path, type);
         }
     }
 }

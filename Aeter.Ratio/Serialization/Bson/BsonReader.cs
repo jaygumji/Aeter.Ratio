@@ -108,22 +108,22 @@ namespace Aeter.Ratio.Serialization.Bson
                     binarySize = regexPatternSize + regexOptionsSize + 8; // Include the length field 4 + 4
                     return new BsonRegex(regexPattern, regexOptions);
                 case BsonTypeCode.Document:
-                    binarySize = ReadInt32();
+                    binarySize = ReadInt32(); // For documents, the size field is including the 4 bytes to store the size
                     var doc = new BsonDocument(binarySize);
                     if (deep) {
-                        var parsedSize = 0;
-                        ReadDocument(doc, ref parsedSize);
+                        var parsedSize = 5; // Include length (4) + 0x00 terminator (1)
+                        ReadDocument(doc, ref parsedSize, out _);
+                        if (buffer.ReadByte() != 0) throw UnexpectedBsonException.MissingTerminator("document");
                     }
-                    binarySize += 4; // Include the length field
                     return doc;
                 case BsonTypeCode.Array:
-                    binarySize = ReadInt32();
+                    binarySize = ReadInt32(); // For arrays, the size field is including the 4 bytes to store the size
                     var arr = new BsonArray(binarySize);
                     if (deep) {
-                        var parsedSize = 0;
-                        ReadArray(arr, in binarySize, ref parsedSize);
+                        var parsedSize = 5; // Include length (4) + 0x00 terminator (1)
+                        ReadArray(arr, ref parsedSize, deep);
+                        if (buffer.ReadByte() != 0) throw UnexpectedBsonException.MissingTerminator("array");
                     }
-                    binarySize += 4; // Include the length field
                     return arr;
                 case BsonTypeCode.Binary:
                     binarySize = ReadInt32();
@@ -171,31 +171,32 @@ namespace Aeter.Ratio.Serialization.Bson
             throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
 
-        public IBsonNode? ReadArray(BsonArray array, in int size, ref int parsedSize, int indexToFind = -1)
-        {
-            while (parsedSize < size) {
-                if (!TryReadCString(out var fieldName, out var fieldNameSize)) throw UnexpectedBsonException.From("field name", buffer, encoding);
-                parsedSize += fieldNameSize;
-                if (!int.TryParse(fieldName, out var index)) throw UnexpectedBsonException.From("array index", buffer, encoding);
-                if (index == indexToFind) {
-                    var value = ReadValue(deep: false, out var parsedValueSize);
-                    parsedSize += parsedValueSize;
-                    return value;
-                }
-                else {
-                    var value = ReadValue(deep: true, out var parsedValueSize);
-                    parsedSize += parsedValueSize;
-                    array.Add(value);
-                }
-            }
-            return default;
-        }
+        //public IBsonNode? ReadArray(BsonArray array, in int size, ref int parsedSize, int indexToFind = -1)
+        //{
+        //    while (parsedSize < size) {
+        //        if (!TryReadCString(out var fieldName, out var fieldNameSize)) throw UnexpectedBsonException.From("field name", buffer, encoding);
+        //        parsedSize += fieldNameSize;
+        //        if (!int.TryParse(fieldName, out var index)) throw UnexpectedBsonException.From("array index", buffer, encoding);
+        //        if (index == indexToFind) {
+        //            var value = ReadValue(deep: false, out var parsedValueSize);
+        //            parsedSize += parsedValueSize;
+        //            return value;
+        //        }
+        //        else {
+        //            var value = ReadValue(deep: true, out var parsedValueSize);
+        //            parsedSize += parsedValueSize;
+        //            array.Add(value);
+        //        }
+        //    }
+        //    return default;
+        //}
 
         public IBsonNode ReadArray(BsonArray array, ref int parsedSize, bool deep = true)
         {
             var size = array.Size;
             while (parsedSize < size) {
                 var type = ReadType();
+                if (type == 0) return BsonUndefined.Instance;
                 parsedSize++;
                 if (!TryReadCString(out var fieldName, out var fieldNameSize)) throw UnexpectedBsonException.From("field name", buffer, encoding);
                 parsedSize += fieldNameSize;
@@ -210,15 +211,16 @@ namespace Aeter.Ratio.Serialization.Bson
             return BsonUndefined.Instance;
         }
 
-        public IBsonNode ReadDocument(BsonDocument document, ref int parsedSize, string? nameToFind = null)
+        public IBsonNode ReadDocument(BsonDocument document, ref int parsedSize, out string? fieldName, string? nameToFind = null, bool findFirst = false)
         {
+            fieldName = null;
             var size = document.Size;
             while (parsedSize < size) {
                 var type = ReadType();
                 parsedSize++;
-                if (!TryReadCString(out var fieldName, out var fieldNameSize)) throw UnexpectedBsonException.From("field name", buffer, encoding);
+                if (!TryReadCString(out fieldName, out var fieldNameSize)) throw UnexpectedBsonException.From("field name", buffer, encoding);
                 parsedSize += fieldNameSize;
-                var isMatchedName = string.Equals(fieldName, nameToFind, StringComparison.Ordinal);
+                var isMatchedName = findFirst || string.Equals(fieldName, nameToFind, StringComparison.Ordinal);
                 var value = ReadValue(type, deep: !isMatchedName, out var parsedValueSize);
                 parsedSize += parsedValueSize;
                 document.Add(fieldName, value);

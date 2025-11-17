@@ -13,6 +13,7 @@ namespace Aeter.Ratio.Serialization.Bson
         private readonly IFieldNameResolver _fieldNameResolver;
         private readonly BinaryWriteBuffer _writeBuffer;
         private readonly Stack<BinaryBufferReservation> _states;
+        private readonly Stack<string> _dictionaryKeys = new();
 
         public BsonWriteVisitor(BsonEncoding encoding,
             IFieldNameResolver fieldNameResolver,
@@ -118,11 +119,10 @@ namespace Aeter.Ratio.Serialization.Bson
                     WriteString(args.Index.ToString(), includeLength: false);
                     return;
                 case LevelType.DictionaryKey:
-                    // Dictionary keys are written as value without length
                     return;
                 case LevelType.DictionaryValue:
                     WritePropertyType(value, type);
-                    // The preceding DictionaryKey visit should have written the header
+                    WriteString(_dictionaryKeys.Pop(), includeLength: false);
                     return;
             }
             if (args.Name == null) return;
@@ -133,15 +133,23 @@ namespace Aeter.Ratio.Serialization.Bson
             WriteString(_fieldNameResolver.Resolve(args), includeLength: false);
         }
 
-        private void WriteValueDefault<T>(T? value, VisitArgs args, BsonTypeCode type, IBinaryInformation<T> info)
-            where T : struct
+        private bool CheckForAndManageDictionaryKey<T>(T? value, VisitArgs args)
         {
             if (args.Type == LevelType.DictionaryKey) {
                 if (value is null) throw new ArgumentException("Dictionary keys can not be null");
-                var actValue = ValueConverter.Text(value); // Dictionary keys must be of type string
-                WriteString(actValue, includeLength: false);
-                return;
+                // Dictionary keys are written with the value as property name of a document
+                // So we store it in a stack for use when we visit the value
+                _dictionaryKeys.Push(ValueConverter.Text(value));
+                return true;
             }
+            return false;
+        }
+
+        private void WriteValueDefault<T>(T? value, VisitArgs args, BsonTypeCode type, IBinaryInformation<T> info)
+            where T : struct
+        {
+            if (CheckForAndManageDictionaryKey(value, args)) return;
+
             WritePropertyHeader(value, args, type);
             if (value == null) {
                 return;
@@ -194,6 +202,8 @@ namespace Aeter.Ratio.Serialization.Bson
 
         public void VisitValue(bool? value, VisitArgs args)
         {
+            if (CheckForAndManageDictionaryKey(value, args)) return;
+
             WritePropertyHeader(value, args, BsonTypeCode.Boolean);
             if (value == null) {
                 return;
@@ -228,19 +238,20 @@ namespace Aeter.Ratio.Serialization.Bson
 
         public void VisitValue(string? value, VisitArgs args)
         {
+            if (CheckForAndManageDictionaryKey(value, args)) return;
+
             WritePropertyHeader(value, args, BsonTypeCode.String);
             if (value == null) {
                 return;
             }
-            if (args.Type == LevelType.DictionaryKey) {
-                WriteString(value, includeLength: false);
-                return;
-            }
+
             WriteString(value, includeLength: true);
         }
 
         public void VisitValue(Guid? value, VisitArgs args)
         {
+            if (CheckForAndManageDictionaryKey(value, args)) return;
+
             WritePropertyHeader(value, args, BsonTypeCode.Binary);
             if (value == null) {
                 return;
@@ -253,6 +264,8 @@ namespace Aeter.Ratio.Serialization.Bson
 
         public void VisitValue(byte[]? value, VisitArgs args)
         {
+            if (CheckForAndManageDictionaryKey(value, args)) return;
+
             WritePropertyHeader(value, args, BsonTypeCode.Binary);
             if (value == null) {
                 return;

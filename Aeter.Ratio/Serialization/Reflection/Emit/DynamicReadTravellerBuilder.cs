@@ -170,8 +170,10 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             var valueLocal = DeclareCollectionItemLocal(collectionMembers.ElementType); ;
 
             if (collectionMembers.ElementTypeExt.IsValueOrNullableOfValue()) {
+                var indexLocal = _il.NewLocal(typeof(uint));
+                _il.Set(indexLocal, (uint)0);
                 _il.WhileLoop(il => { // While condition
-                    _il.InvokeMethod(_visitorVariable, Members.VisitorTryVisitValue[collectionMembers.ElementType], Members.VisitArgsCollectionItem, valueLocal);
+                    _il.InvokeMethod(_visitorVariable, Members.VisitorTryVisitValue[collectionMembers.ElementType], Members.VisitArgsCollectionItem.Call(Members.VisitArgsForIndex, indexLocal.Set(indexLocal.Add((uint)1))), valueLocal);
 
                     var valueNotFoundLabel = _il.NewLabel();
                     valueNotFoundLabel.TransferLongIfFalse();
@@ -199,33 +201,48 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
                 });
             }
             else if (collectionMembers.ElementTypeExt.Classification == TypeClassification.Dictionary) {
+                var indexLocal = _il.NewLocal(typeof(uint));
+                _il.Set(indexLocal, (uint)0);
+                var curArgs = _il.NewLocal(typeof(VisitArgs));
+                _il.Set(curArgs, Members.VisitArgsDictionaryInCollection.Call(Members.VisitArgsForIndex, indexLocal.Set(indexLocal.Add((uint)1))));
                 _il.WhileLoop(il => { // Condition
-                    var callTryVisit = new ILCallMethodSnippet(_visitorVariable, Members.VisitorTryVisit, Members.VisitArgsDictionaryInCollection);
+                    var callTryVisit = new ILCallMethodSnippet(_visitorVariable, Members.VisitorTryVisit, curArgs);
                     _il.AreEqual(callTryVisit, (int)ValueState.Found);
                 }, il => {
                     var contentParam = GenerateDictionaryEnumerateCode(collectionMembers.ElementType, refName);
-                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, Members.VisitArgsDictionaryInCollection);
+                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, curArgs);
                     _il.InvokeMethod(collectionLocal, collectionMembers.Add, contentParam);
+                    _il.Set(curArgs, curArgs.Call(Members.VisitArgsForIndex, indexLocal.Set(indexLocal.Add((uint)1))));
                 });
             }
             else if (collectionMembers.ElementTypeExt.Classification == TypeClassification.Collection) {
+                var indexLocal = _il.NewLocal(typeof(uint));
+                _il.Set(indexLocal, (uint)0);
+                var curArgs = _il.NewLocal(typeof(VisitArgs));
+                _il.Set(curArgs, Members.VisitArgsCollectionInCollection.Call(Members.VisitArgsForIndex, indexLocal.Set(indexLocal.Add((uint)1))));
                 _il.WhileLoop(il => { // Condition
-                    var callTryVisit = new ILCallMethodSnippet(_visitorVariable, Members.VisitorTryVisit, Members.VisitArgsCollectionInCollection);
+                    var callTryVisit = new ILCallMethodSnippet(_visitorVariable, Members.VisitorTryVisit, curArgs);
                     _il.AreEqual(callTryVisit, (int)ValueState.Found);
                 }, il => {
                     var contentParam = GenerateCollectionContent(collectionMembers.ElementTypeExt, refName);
-                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, Members.VisitArgsCollectionInCollection);
+                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, curArgs);
                     _il.InvokeMethod(collectionLocal, collectionMembers.Add, contentParam);
+                    _il.Set(curArgs, curArgs.Call(Members.VisitArgsForIndex, indexLocal.Set(indexLocal.Add((uint)1))));
                 });
             }
             else {
+                var indexLocal = _il.NewLocal(typeof(uint));
+                _il.Set(indexLocal, (uint)0);
+                var curArgs = _il.NewLocal(typeof(VisitArgs));
+                _il.Set(curArgs, Members.VisitArgsCollectionItem.Call(Members.VisitArgsForIndex, indexLocal.Set(indexLocal.Add((uint)1))));
                 _il.WhileLoop(il => {
-                    var callTryVisit = new ILCallMethodSnippet(_visitorVariable, Members.VisitorTryVisit, Members.VisitArgsCollectionItem);
+                    var callTryVisit = new ILCallMethodSnippet(_visitorVariable, Members.VisitorTryVisit, curArgs);
                     _il.AreEqual(callTryVisit, (int)ValueState.Found);
                 }, il => {
                     GenerateCreateAndChildCallCode(valueLocal);
-                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, Members.VisitArgsCollectionItem);
+                    _il.InvokeMethod(_visitorVariable, Members.VisitorLeave, curArgs);
                     _il.InvokeMethod(collectionLocal, collectionMembers.Add, valueLocal);
+                    _il.Set(curArgs, curArgs.Call(Members.VisitArgsForIndex, indexLocal.Set(indexLocal.Add((uint)1))));
                 });
             }
             if (target.Ref.IsArray)

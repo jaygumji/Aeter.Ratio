@@ -5,11 +5,11 @@ using System.Reflection.Emit;
 
 namespace Aeter.Ratio.Reflection.Emit
 {
-    public class ILInt32ConstantPointer : ILConstantPointer
+    public class ILUInt32ConstantPointer : ILConstantPointer
     {
-        private readonly int _value;
+        private readonly uint _value;
 
-        public ILInt32ConstantPointer(int value) : base(typeof(int))
+        public ILUInt32ConstantPointer(uint value) : base(typeof(uint))
         {
             _value = value;
         }
@@ -43,11 +43,8 @@ namespace Aeter.Ratio.Reflection.Emit
             else if (_value == 8) {
                 il.Emit(OpCodes.Ldc_I4_8);
             }
-            else if (_value == -1) {
-                il.Emit(OpCodes.Ldc_I4_M1);
-            }
             else {
-                il.Emit(OpCodes.Ldc_I4, _value);
+                il.Emit(OpCodes.Ldc_I4, (int)_value);
             }
         }
     }

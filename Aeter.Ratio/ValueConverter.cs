@@ -9,7 +9,7 @@ namespace Aeter.Ratio
 {
     public static class ValueConverter
     {
-        public static string Text(object value)
+        public static string Text(object? value)
         {
             if (value is null) {
                 return string.Empty;

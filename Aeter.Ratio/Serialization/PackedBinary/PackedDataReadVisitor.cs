@@ -53,7 +53,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public ValueState TryVisit(VisitArgs args)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index))
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex))
                 return ValueState.NotFound;
 
             var byteLength = reader.ReadByte();
@@ -87,7 +87,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out byte? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -105,7 +105,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out short? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -120,7 +120,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out int? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -135,7 +135,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out long? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -150,7 +150,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out ushort? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -165,7 +165,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out uint? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -180,7 +180,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out ulong? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -195,7 +195,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out bool? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -213,7 +213,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out float? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -231,7 +231,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out double? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -249,7 +249,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out decimal? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -267,7 +267,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out TimeSpan? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -282,7 +282,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out DateTime? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -297,7 +297,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out string? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -315,7 +315,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out Guid? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }
@@ -333,7 +333,7 @@ namespace Aeter.Ratio.Serialization.PackedBinary
 
         public bool TryVisitValue(VisitArgs args, out byte[]? value)
         {
-            if (args.Index > 0 && !MoveToIndex(args.Index)) {
+            if (args.PropertyIndex > 0 && !MoveToIndex(args.PropertyIndex)) {
                 value = null;
                 return false;
             }

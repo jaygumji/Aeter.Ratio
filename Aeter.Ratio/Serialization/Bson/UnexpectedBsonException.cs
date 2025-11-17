@@ -14,24 +14,10 @@ namespace Aeter.Ratio.Serialization.Bson
         {
         }
 
-        public static UnexpectedBsonException From(string expected, BinaryReadBuffer buffer, BsonEncoding encoding)
-        {
-            return new UnexpectedBsonException("Unexpected token in bson. Expected " + expected);
-        }
-
-        public static UnexpectedBsonException Type(string? name, IBsonNode node, Type expectedType)
-        {
-            return new UnexpectedBsonException($"Unable to parse field {name}, expected {expectedType.Name}, but found {node.GetType().Name}");
-        }
-
-        public static UnexpectedBsonException ValueWouldBeTruncated<T>(string? name, T value, Type targetType)
-        {
-            return new UnexpectedBsonException($"Unable to deserialize field {name}, value '{value}' would be truncated if converted to {targetType.Name}");
-        }
-
-        public static UnexpectedBsonException Validation(string message)
-        {
-            return new UnexpectedBsonException(message);
-        }
+        public static UnexpectedBsonException From(string expected, BinaryReadBuffer buffer, BsonEncoding encoding) => new("Unexpected token in bson. Expected " + expected);
+        public static UnexpectedBsonException Type(string? name, IBsonNode node, Type expectedType) => new($"Unable to parse field {name}, expected {expectedType.Name}, but found {node.GetType().Name}");
+        public static UnexpectedBsonException ValueWouldBeTruncated<T>(string? name, T value, Type targetType) => new($"Unable to deserialize field {name}, value '{value}' would be truncated if converted to {targetType.Name}");
+        public static UnexpectedBsonException Validation(string message) => new(message);
+        public static UnexpectedBsonException MissingTerminator(string typeName) => new($"Missing 0x00 terminator of {typeName}");
     }
 }

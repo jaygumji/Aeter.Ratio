@@ -40,6 +40,7 @@ namespace Aeter.Ratio.Serialization
             Attributes = attributes;
             State = state;
             IsRoot = isRoot;
+            PropertyIndex = (type & LevelType.CollectionItem) == LevelType.CollectionItem ? 0 : index;
         }
 
         public string? Name { get; }
@@ -48,6 +49,12 @@ namespace Aeter.Ratio.Serialization
         public bool IsRoot { get; }
         public EnigmaSerializationAttributes Attributes { get; }
         public object? State { get; }
+        public uint PropertyIndex { get; }
+
+        public VisitArgs ForIndex(uint index)
+        {
+            return new VisitArgs(Name, Type, index, Attributes, State, IsRoot);
+        }
 
         public override string ToString()
         {

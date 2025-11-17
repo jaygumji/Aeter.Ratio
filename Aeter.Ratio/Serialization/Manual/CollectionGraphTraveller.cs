@@ -41,31 +41,36 @@ namespace Aeter.Ratio.Serialization.Manual
         public void Travel(IReadVisitor visitor, TCollection graph)
         {
             var itemArgs = VisitArgs.CollectionItem;
+            uint index = 0;
             if (_valueVisitor != null) {
-                while (_valueVisitor.TryVisitValue(visitor, itemArgs, out var value)) {
+                while (_valueVisitor.TryVisitValue(visitor, itemArgs.ForIndex(index++), out var value)) {
                     graph.Add(value);
                 }
                 return;
             }
-            while (visitor.TryVisit(itemArgs) == ValueState.Found) {
+            var curArgs = itemArgs.ForIndex(index++);
+            while (visitor.TryVisit(curArgs) == ValueState.Found) {
                 var element = (TElement)_instanceFactory!.CreateInstance(_elementType!);
                 _elementTraveller.Travel(visitor, element);
                 graph.Add(element);
-                visitor.Leave(itemArgs);
+                visitor.Leave(curArgs);
+                curArgs = itemArgs.ForIndex(index++);
             }
         }
 
         public void Travel(IWriteVisitor visitor, TCollection graph)
         {
             var itemArgs = VisitArgs.CollectionItem;
+            uint index = 0;
             foreach (var element in graph) {
                 if (_valueVisitor != null) {
-                    _valueVisitor.VisitValue(visitor, itemArgs, element);
+                    _valueVisitor.VisitValue(visitor, itemArgs.ForIndex(index++), element);
                 }
                 else {
-                    visitor.Visit(element, itemArgs);
+                    var curArgs = itemArgs.ForIndex(index++);
+                    visitor.Visit(element, curArgs);
                     _elementTraveller.Travel(visitor, element);
-                    visitor.Leave(element, itemArgs);
+                    visitor.Leave(element, curArgs);
                 }
             }
         }

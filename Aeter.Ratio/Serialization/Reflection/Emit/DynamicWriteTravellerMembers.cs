@@ -24,6 +24,8 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
         public readonly ILPointer VisitArgsCollectionInDictionaryKey;
         public readonly ILPointer VisitArgsCollectionInDictionaryValue;
 
+        public readonly MethodInfo VisitArgsForIndex;
+
         public readonly MethodInfo VisitorVisit;
         public readonly MethodInfo VisitorLeave;
         public readonly Dictionary<Type, MethodInfo> VisitorVisitValue;
@@ -48,15 +50,17 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             VisitArgsCollectionInDictionaryKey = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryKey)).AsILPointer();
             VisitArgsCollectionInDictionaryValue = visitArgsType.FindField(nameof(VisitArgs.CollectionInDictionaryValue)).AsILPointer();
 
+            VisitArgsForIndex = visitArgsType.FindMethod(nameof(VisitArgs.ForIndex));
+
             var writeVisitorType = typeof (IWriteVisitor);
-            VisitorVisit = writeVisitorType.FindMethod("Visit");
-            VisitorLeave = writeVisitorType.FindMethod("Leave");
+            VisitorVisit = writeVisitorType.FindMethod(nameof(IWriteVisitor.Visit));
+            VisitorLeave = writeVisitorType.FindMethod(nameof(IWriteVisitor.Leave));
 
             VisitorVisitValue = new Dictionary<Type, MethodInfo>();
             NullableConstructors = new Dictionary<Type, ConstructorInfo>();
             var nullableType = typeof (Nullable<>);
             foreach (var method in writeVisitorType.GetMethods()
-                .Where(m => m.Name == "VisitValue")) {
+                .Where(m => m.Name == nameof(IWriteVisitor.VisitValue))) {
 
                 var valueType = method.GetParameters()[0].ParameterType;
                 var valueTypeExt = provider.Extend(valueType);

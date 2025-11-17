@@ -97,8 +97,9 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
                 visitor.Visit(c, _argsMessages);
 
                 if (c != null) {
+                    uint index = 0;
                     foreach (var cv in c)
-                        visitor.VisitValue(cv, VisitArgs.CollectionItem);
+                        visitor.VisitValue(cv, VisitArgs.CollectionItem.ForIndex(index++));
                 }
 
                 visitor.Leave(c, _argsMessages);
@@ -107,9 +108,11 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
             {
                 var c = (ICollection<DateTime>?)graph.Stamps;
                 visitor.Visit(c, _argsStamps);
-                if (c != null)
+                if (c != null) {
+                    uint index = 0;
                     foreach (var cv in c)
-                        visitor.VisitValue(cv, VisitArgs.CollectionItem);
+                        visitor.VisitValue(cv, VisitArgs.CollectionItem.ForIndex(index++));
+                }
 
                 visitor.Leave(c, _argsStamps);
             }
@@ -134,10 +137,12 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
                 var c = (ICollection<Relation>?)graph.SecondaryRelations;
                 visitor.Visit(c, _argsSecondaryRelations);
                 if (c != null) {
+                    uint index = 0;
                     foreach (var cv in c) {
-                        visitor.Visit(cv, VisitArgs.CollectionItem);
+                        var curArgs = VisitArgs.CollectionItem.ForIndex(index++);
+                        visitor.Visit(cv, curArgs);
                         _travellerRelation0.Travel(visitor, cv);
-                        visitor.Leave(cv, VisitArgs.CollectionItem);
+                        visitor.Leave(cv, curArgs);
                     }
                 }
 
@@ -256,7 +261,8 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
                 if (state == ValueState.Found) {
                     var c = new List<string>();
                     string? cv;
-                    while (visitor.TryVisitValue(VisitArgs.CollectionItem, out cv) && cv != null)
+                    uint index = 0;
+                    while (visitor.TryVisitValue(VisitArgs.CollectionItem.ForIndex(index++), out cv) && cv != null)
                         c.Add(cv);
                     graph.Messages = c;
 
@@ -271,7 +277,8 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
                 if (state == ValueState.Found) {
                     var c = new List<DateTime>();
                     DateTime? cv;
-                    while (visitor.TryVisitValue(VisitArgs.CollectionItem, out cv) && cv.HasValue)
+                    uint index = 0;
+                    while (visitor.TryVisitValue(VisitArgs.CollectionItem.ForIndex(index++), out cv) && cv.HasValue)
                         c.Add(cv.Value);
                     graph.Stamps = c;
 
@@ -311,11 +318,14 @@ namespace Aeter.Ratio.Test.Serialization.HardCoded
             if (state != ValueState.NotFound) {
                 if (state == ValueState.Found) {
                     var c = new List<Relation>();
-                    while (visitor.TryVisit(VisitArgs.CollectionItem) == ValueState.Found) {
+                    uint index = 0;
+                    var curArgs = VisitArgs.CollectionItem.ForIndex(index++);
+                    while (visitor.TryVisit(curArgs) == ValueState.Found) {
                         var cv = new Relation();
                         _travellerRelation0.Travel(visitor, cv);
-                        visitor.Leave(VisitArgs.CollectionItem);
+                        visitor.Leave(curArgs);
                         c.Add(cv);
+                        curArgs = curArgs.ForIndex(index++);
                     }
                     graph.SecondaryRelations = c;
 

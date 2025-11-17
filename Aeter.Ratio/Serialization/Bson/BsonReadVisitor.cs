@@ -5,6 +5,7 @@ using Aeter.Ratio.Binary;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace Aeter.Ratio.Serialization.Bson
@@ -16,14 +17,16 @@ namespace Aeter.Ratio.Serialization.Bson
         private readonly BinaryReadBuffer _buffer;
         private readonly BsonReader _reader;
         private readonly Stack<BsonReadLevel> _parents;
+        private readonly Stack<DictionaryState> _dictionaryStates = new();
 
         private class BsonReadLevel
         {
             public readonly IBsonNode Node;
             public readonly int Size;
-            public int Position = 4; // The 4 size bytes is included and already read
+            public int Position = 5; // The 4 size bytes is included and already read, and we are including the 0x00 termination
             public int Index;
-            public bool IsFullyParsed => Position + 1 >= Size; // Include the trailing zero in the check
+            public bool IsFullyParsed => Position >= Size; // Include the trailing zero in the check
+            public object State; // Custom state to manage special cases like dictionaries
 
             public BsonReadLevel(IBsonNode node)
             {
@@ -38,6 +41,11 @@ namespace Aeter.Ratio.Serialization.Bson
                     Size = -1;
                 }
             }
+        }
+        private class DictionaryState
+        {
+            public List<string> Keys = new();
+            public int Index = -1;
         }
 
         public BsonReadVisitor(BsonEncoding encoding, IFieldNameResolver fieldNameResolver, BinaryReadBuffer buffer)
@@ -62,29 +70,44 @@ namespace Aeter.Ratio.Serialization.Bson
 
             var parent = _parents.Peek();
 
-            if (args.Type.IsDictionaryKey()) {
-                if (parent.IsFullyParsed) {
-                    return BsonUndefined.Instance;
-                }
-                if (!_reader.TryReadCString(out var key, out var binarySize)) {
-                    throw UnexpectedBsonException.From("document key", _buffer, _encoding);
-                }
-                parent.Position += binarySize;
-                return new BsonString(key);
-            }
-            if (args.Type.IsDictionaryValue()) {
-                if (parent.IsFullyParsed) {
-                    return BsonUndefined.Instance;
-                }
-                var value = _reader.ReadValue(deep: false, out var binarySize);
-                if (value is BsonDocument || value is BsonArray) {
-                    _parents.Push(new BsonReadLevel(value));
-                }
-                parent.Position += binarySize;
-                return value;
-            }
-
             if (parent.Node is BsonDocument obj) {
+                if (args.Type.IsDictionaryKey()) {
+                    var state = (DictionaryState)(parent.State ??= new DictionaryState());
+                    if (parent.IsFullyParsed) {
+                        if (!obj.Any()) return BsonUndefined.Instance;
+
+                        if (state.Index == -1) {
+                            state.Keys.AddRange(obj.Select(x => x.Key));
+                            state.Index = 0;
+                            return new BsonString(state.Keys[0]);
+                        }
+                        else {
+                            if (++state.Index >= state.Keys.Count) return BsonUndefined.Instance;
+                            return new BsonString(state.Keys[state.Index]);
+                        }
+                    }
+                    else {
+                        var knode = _reader.ReadDocument(obj, ref parent.Position, out var key, nameToFind: null, findFirst: true);
+                        if (knode == BsonUndefined.Instance) return knode;
+
+                        state.Keys.Add(key!);
+                        state.Index++;
+                        return new BsonString(key);
+                    }
+                }
+                if (args.Type.IsDictionaryValue()) {
+                    var state = (DictionaryState)(parent.State ??= new DictionaryState());
+                    var key = state.Keys[state.Index];
+                    if (obj.TryGet(key, out var vnode)) {
+                        if (vnode is BsonDocument || vnode is BsonArray) {
+                            _parents.Push(new BsonReadLevel(vnode));
+                        }
+                        return vnode;
+                    }
+
+                    return BsonUndefined.Instance;
+                }
+
                 if (obj.TryGet(name!, out var field)) {
                     if (field is BsonDocument) {
                         _parents.Push(new BsonReadLevel(field));
@@ -96,7 +119,7 @@ namespace Aeter.Ratio.Serialization.Bson
                     return BsonUndefined.Instance;
                 }
 
-                var node = _reader.ReadDocument(obj, ref parent.Position, name);
+                var node = _reader.ReadDocument(obj, ref parent.Position, out _, nameToFind: name);
                 if (node is BsonDocument || node is BsonArray) {
                     _parents.Push(new BsonReadLevel(node));
                 }

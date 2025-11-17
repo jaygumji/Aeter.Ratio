@@ -41,7 +41,7 @@ namespace Aeter.Ratio.Test.Serialization.Bson
 
             var document = new BsonDocument(size);
             var parsed = 4 + 1; // Include size data and termination
-            reader.ReadDocument(document, ref parsed);
+            reader.ReadDocument(document, ref parsed, out _);
 
             AssertBsonInt32(document, "byteValue", ByteValue);
             AssertBsonInt32(document, "int16Value", Int16Value);

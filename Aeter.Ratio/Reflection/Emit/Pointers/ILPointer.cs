@@ -77,7 +77,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         public static ILPointer Of(uint value)
         {
-            return new ILInt32ConstantPointer((int)value);
+            return new ILUInt32ConstantPointer(value);
         }
 
         public static ILPointer Of(Type type)

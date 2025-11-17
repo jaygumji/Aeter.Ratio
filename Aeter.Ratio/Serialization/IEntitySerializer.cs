@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using Aeter.Ratio.Binary;
 using System;
+using System.Collections.Generic;
 
 namespace Aeter.Ratio.Serialization
 {
@@ -12,5 +13,7 @@ namespace Aeter.Ratio.Serialization
         object? Deserialize(Type type, BinaryReadBuffer buffer);
         void Serialize<T>(BinaryWriteBuffer buffer, T graph);
         T Deserialize<T>(BinaryReadBuffer buffer);
+
+        IReadOnlyList<object?> ReadValue(BinaryReadBuffer buffer, string path, Type type);
     }
 }
