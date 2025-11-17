@@ -5,10 +5,11 @@ using System;
 
 namespace Aeter.Ratio.Binary.EntityStore
 {
-    public class EntityEngineEventsChangedArgs(object entity, BinaryReadBuffer buffer, EntityChangeType changeType) : AsyncEventArgs
+    public class EntityEngineEventsChangedArgs(Guid entityId, object? entity, ReadOnlyMemory<byte> payload, EntityChangeType changeType) : AsyncEventArgs
     {
-        public object Entity { get; } = entity;
-        public BinaryReadBuffer Buffer { get; } = buffer;
+        public Guid EntityId { get; } = entityId;
+        public object? Entity { get; } = entity;
+        public ReadOnlyMemory<byte> Payload { get; } = payload;
         public EntityChangeType ChangeType { get; } = changeType;
     }
 }

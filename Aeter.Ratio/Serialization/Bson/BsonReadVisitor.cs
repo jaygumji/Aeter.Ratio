@@ -26,7 +26,7 @@ namespace Aeter.Ratio.Serialization.Bson
             public int Position = 5; // The 4 size bytes is included and already read, and we are including the 0x00 termination
             public int Index;
             public bool IsFullyParsed => Position >= Size; // Include the trailing zero in the check
-            public object State; // Custom state to manage special cases like dictionaries
+            public object? State; // Custom state to manage special cases like dictionaries
 
             public BsonReadLevel(IBsonNode node)
             {

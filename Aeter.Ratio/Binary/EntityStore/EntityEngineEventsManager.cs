@@ -11,6 +11,7 @@ namespace Aeter.Ratio.Binary.EntityStore
         public async Task RaiseEntityChangedAsync(EntityEngineEventsChangedArgs args)
         {
             ArgumentNullException.ThrowIfNull(args);
+            await entityChanged.RaiseAsync(args).ConfigureAwait(false);
         }
     }
 }

@@ -3,8 +3,8 @@ using Aeter.Ratio.Scheduling;
 using Aeter.Ratio.Serialization;
 using Aeter.Ratio.Serialization.Bson;
 using System;
-using System.IO;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,7 +21,9 @@ namespace Aeter.Ratio.Binary.EntityStore
         private readonly Scheduler scheduler;
         private readonly BinaryEntityStoreToc toc;
         private readonly Task initializationTask;
+        private readonly EntityEngineEventsManager events = new();
         private bool disposed;
+        private BinaryEntityStoreIndexEngine? indexEngine;
 
         public BinaryEntityStoreEngine(BinaryEntityStoreFileSystem fileSystem, BinaryEntityStore store, BinaryBufferPool bufferPool, Scheduler scheduler, BinaryEntityStoreToc toc, BinaryEntityStoreLockManager lockManager, ScheduledTaskHandle initHandle)
         {
@@ -62,7 +64,7 @@ namespace Aeter.Ratio.Binary.EntityStore
             if (TryGetActiveEntry(id, out _)) {
                 throw new InvalidOperationException($"Entity with id '{id}' already exists in the store.");
             }
-            await WriteEntityAsync(id, entity, cancellationToken).ConfigureAwait(false);
+            await WriteEntityAsync(id, entity, EntityChangeType.Added, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task UpdateAsync(Guid id, object entity, CancellationToken cancellationToken = default)
@@ -77,7 +79,7 @@ namespace Aeter.Ratio.Binary.EntityStore
 
             await store.MarkAsNotUsedAsync(existing.Offset, cancellationToken).ConfigureAwait(false);
             toc.Remove(id);
-            await WriteEntityAsync(id, entity, cancellationToken).ConfigureAwait(false);
+            await WriteEntityAsync(id, entity, EntityChangeType.Updated, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -91,6 +93,7 @@ namespace Aeter.Ratio.Binary.EntityStore
 
             await store.MarkAsNotUsedAsync(existing.Offset, cancellationToken).ConfigureAwait(false);
             toc.Remove(id);
+            await events.RaiseEntityChangedAsync(new EntityEngineEventsChangedArgs(id, null, ReadOnlyMemory<byte>.Empty, EntityChangeType.Deleted));
         }
 
         public async Task<T?> GetAsync<T>(Guid id, CancellationToken cancellationToken = default)
@@ -134,6 +137,7 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
 
             store.Dispose();
+            indexEngine?.Dispose();
             toc.Dispose();
             lockManager.Dispose();
             await scheduler.DisposeAsync().ConfigureAwait(false);
@@ -151,6 +155,9 @@ namespace Aeter.Ratio.Binary.EntityStore
                 else {
                     throw new ArgumentOutOfRangeException(nameof(header.SerializerType), header.SerializerType, null);
                 }
+                var (IndexEngine, InitHandle) = await BinaryEntityStoreIndexEngine.CreateAsync(fileSystem, store, events, lockManager, toc, scheduler, serializer);
+                indexEngine = IndexEngine;
+                await InitHandle.Completion.ConfigureAwait(false);
             }
             finally {
                 await initHandle.DisposeAsync().ConfigureAwait(false);
@@ -169,7 +176,7 @@ namespace Aeter.Ratio.Binary.EntityStore
             return false;
         }
 
-        private async Task WriteEntityAsync(Guid id, object entity, CancellationToken cancellationToken)
+        private async Task WriteEntityAsync(Guid id, object entity, EntityChangeType changeType, CancellationToken cancellationToken)
         {
             var payload = SerializeEntity(entity);
             var metadata = new BinaryEntityStoreRecordMetadata(id, header!.Version);
@@ -182,6 +189,7 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
             using var written = await store.ReadAsync(offset, cancellationToken).ConfigureAwait(false);
             toc.Upsert(id, offset, written.Header.Size, isFree: false);
+            await events.RaiseEntityChangedAsync(new EntityEngineEventsChangedArgs(id, entity, payload, changeType));
         }
 
         private byte[] SerializeEntity(object entity)
