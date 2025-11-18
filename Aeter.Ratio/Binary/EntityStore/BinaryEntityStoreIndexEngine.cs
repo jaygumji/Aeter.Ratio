@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary.EntityStore
 {
+    /// <summary>
+    /// Coordinates creation, initialization, and querying of binary entity store indexes.
+    /// </summary>
     public sealed class BinaryEntityStoreIndexEngine : IDisposable
     {
         private readonly BinaryEntityStoreFileSystem fileSystem;
@@ -46,6 +49,19 @@ namespace Aeter.Ratio.Binary.EntityStore
             this.events.Register(entityChangedHandler);
         }
 
+        /// <summary>
+        /// Creates an index engine and schedules the asynchronous initialization of every on-disk index.
+        /// </summary>
+        /// <param name="fileSystem">Index file system abstraction.</param>
+        /// <param name="entityStore">Backing entity store for reading payloads.</param>
+        /// <param name="events">Event source used to observe entity mutations.</param>
+        /// <param name="lockManager">Lock manager guarding entity reads during index population.</param>
+        /// <param name="toc">Table of contents used to iterate persisted entities.</param>
+        /// <param name="scheduler">Scheduler that runs the initialization task.</param>
+        /// <param name="entitySerializer">Serializer capable of materializing indexed values.</param>
+        /// <returns>
+        /// Tuple containing the created engine and the scheduled initialization handle which callers can await before issuing queries.
+        /// </returns>
         public static Task<(BinaryEntityStoreIndexEngine IndexEngine, ScheduledTaskHandle InitHandle)> CreateAsync(BinaryEntityStoreFileSystem fileSystem,
             BinaryEntityStore entityStore, EntityEngineEvents events, BinaryEntityStoreLockManager lockManager, BinaryEntityStoreToc toc, Scheduler scheduler, IEntitySerializer entitySerializer)
         {
@@ -55,6 +71,9 @@ namespace Aeter.Ratio.Binary.EntityStore
             return Task.FromResult((engine, handle));
         }
 
+        /// <summary>
+        /// Gets the paths of the indexes that were discovered on disk.
+        /// </summary>
         public IReadOnlyList<string> Paths {
             get {
                 lock (syncRoot) {
@@ -63,9 +82,22 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
         }
 
+        /// <summary>
+        /// Waits until the background initialization (discovery + population) of every index completed.
+        /// </summary>
+        /// <param name="cancellationToken">Token used to cancel the wait.</param>
         public Task EnsureInitializedAsync(CancellationToken cancellationToken = default)
             => initializationTask.WaitAsync(cancellationToken);
 
+        /// <summary>
+        /// Executes an equality search against an index that advertises the <see cref="BinaryEntityStoreIndexCapabilities.BinarySearch"/> capability.
+        /// Prefer calling this method before <see cref="FullTextSearchAsync"/> whenever you know the exact value you are matching
+        /// (even for strings), because the lookup is deterministic and does not incur fuzzy matching overhead.
+        /// </summary>
+        /// <param name="path">Index path inside the entity.</param>
+        /// <param name="value">Value to match.</param>
+        /// <param name="cancellationToken">Token used to cancel the query.</param>
+        /// <returns>Entity identifiers ordered by the index.</returns>
         public async Task<IReadOnlyList<Guid>> BinarySearchAsync(string path, object value, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -79,6 +111,15 @@ namespace Aeter.Ratio.Binary.EntityStore
             return index.Seek(value);
         }
 
+        /// <summary>
+        /// Runs a fuzzy full-text search against a string index that advertises the <see cref="BinaryEntityStoreIndexCapabilities.FullText"/> capability.
+        /// Use this when <see cref="BinarySearchAsync"/> returned no results or when you intentionally need tolerant matching on textual data.
+        /// </summary>
+        /// <param name="path">Index path inside the entity.</param>
+        /// <param name="query">Text query.</param>
+        /// <param name="tolerance">Maximum tolerated edit distance before a result is discarded.</param>
+        /// <param name="cancellationToken">Token used to cancel the query.</param>
+        /// <returns>Matching entity identifiers, or an empty list if the path does not support full-text indexing.</returns>
         public async Task<IReadOnlyList<Guid>> FullTextSearchAsync(string path, string query, int tolerance = 1, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -92,6 +133,9 @@ namespace Aeter.Ratio.Binary.EntityStore
             return index.FullTextSearch(query, tolerance);
         }
 
+        /// <summary>
+        /// Releases unmanaged resources and unsubscribes from entity change notifications.
+        /// </summary>
         public void Dispose()
         {
             if (disposed) {

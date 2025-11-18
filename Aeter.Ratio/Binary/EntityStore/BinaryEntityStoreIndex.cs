@@ -15,6 +15,10 @@ using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary.EntityStore
 {
+    /// <summary>
+    /// Represents the on-disk ordered index corresponding to a specific entity path in the binary store.
+    /// Handles persistence (mutation log) and offers binary and full-text lookups when enabled.
+    /// </summary>
     internal sealed class BinaryEntityStoreIndex : IDisposable
     {
         private const int BinaryStoreHeaderLength = 5;
@@ -34,6 +38,10 @@ namespace Aeter.Ratio.Binary.EntityStore
         private IComparer<object?>? valueComparer;
         private bool disposed;
 
+        /// <summary>
+        /// Creates a new index wrapper around the specified on-disk file.
+        /// </summary>
+        /// <param name="file">Binary store file containing the serialized index entries.</param>
         public BinaryEntityStoreIndex(BinaryEntityStoreFile file)
         {
             ArgumentNullException.ThrowIfNull(file);
@@ -41,12 +49,33 @@ namespace Aeter.Ratio.Binary.EntityStore
             entryComparer = new IndexValueComparer(this);
         }
 
+        /// <summary>
+        /// Gets the metadata describing this index. Requires <see cref="InitializeAsync"/> to run first.
+        /// </summary>
         public BinaryEntityStoreIndexMetadata Metadata => metadata ?? throw new InvalidOperationException("Index metadata has not been initialized.");
+        /// <summary>
+        /// Gets the entity path (ex: "Address.ZipCode") that was indexed.
+        /// </summary>
         public string Path => Metadata.Path;
+        /// <summary>
+        /// Gets the .NET type stored by each entry inside this index.
+        /// </summary>
         public Type ValueType => Metadata.ValueType;
+        /// <summary>
+        /// Gets the set of capabilities that the stored values expose.
+        /// </summary>
         public BinaryEntityStoreIndexCapabilities Capabilities => Metadata.Capabilities;
+        /// <summary>
+        /// Gets a value indicating whether ordered equality searches are available.
+        /// </summary>
         public bool SupportsBinarySearch => Capabilities.HasFlag(BinaryEntityStoreIndexCapabilities.BinarySearch);
+        /// <summary>
+        /// Gets a value indicating whether string fuzzy searches are available.
+        /// </summary>
         public bool SupportsFullText => Capabilities.HasFlag(BinaryEntityStoreIndexCapabilities.FullText) && ValueType == typeof(string);
+        /// <summary>
+        /// Gets a value indicating whether this index already contains materialized values.
+        /// </summary>
         internal bool HasValues {
             get {
                 lock (entries) {
@@ -55,6 +84,10 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
         }
 
+        /// <summary>
+        /// Reads every record from the backing file, reconstructing metadata and in-memory state.
+        /// </summary>
+        /// <param name="cancellationToken">Token used to cancel initialization.</param>
         public async Task InitializeAsync(CancellationToken cancellationToken)
         {
             await store.ReadAllAsync(async args =>
@@ -99,6 +132,12 @@ namespace Aeter.Ratio.Binary.EntityStore
             EnsureMetadata();
         }
 
+        /// <summary>
+        /// Performs an equality lookup against the ordered entries of this index.
+        /// Prefer this over <see cref="FullTextSearch(string, int)"/> whenever the caller can supply the exact typed value.
+        /// </summary>
+        /// <param name="value">Value to match.</param>
+        /// <returns>Collection of matching entity ids sorted by the order of the index.</returns>
         public IReadOnlyList<Guid> Seek(object value)
         {
             if (!SupportsBinarySearch) {
@@ -128,6 +167,14 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
         }
 
+        /// <summary>
+        /// Performs a fuzzy lookup using the string catalog built by this index.
+        /// Use this when <see cref="SupportsFullText"/> is true and either you want tolerant string matching
+        /// or <see cref="Seek(object)"/> returned no matches because the search term was approximate.
+        /// </summary>
+        /// <param name="query">Text to search for.</param>
+        /// <param name="tolerance">Allowed edit distance.</param>
+        /// <returns>Unique set of entity ids that contained the matching text.</returns>
         public IReadOnlyList<Guid> FullTextSearch(string query, int tolerance = 1)
         {
             if (!SupportsFullText || stringSearcher is null || stringStorage is null) {
@@ -150,6 +197,12 @@ namespace Aeter.Ratio.Binary.EntityStore
             return matches.ToArray();
         }
 
+        /// <summary>
+        /// Replaces (or inserts) the values for the specified entity and persists the mutations to disk.
+        /// </summary>
+        /// <param name="entityId">Entity identifier.</param>
+        /// <param name="values">Values to index.</param>
+        /// <param name="cancellationToken">Token used to cancel the upsert.</param>
         internal async Task UpsertAsync(Guid entityId, IReadOnlyList<object?> values, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(values);
@@ -179,6 +232,11 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
         }
 
+        /// <summary>
+        /// Removes every indexed value for the specified entity identifier.
+        /// </summary>
+        /// <param name="entityId">Entity identifier.</param>
+        /// <param name="cancellationToken">Token used to cancel the removal.</param>
         internal async Task RemoveAsync(Guid entityId, CancellationToken cancellationToken)
         {
             EnsureMetadata();
@@ -197,6 +255,9 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
         }
 
+        /// <summary>
+        /// Releases the index resources (locks and open file handlers).
+        /// </summary>
         public void Dispose()
         {
             if (disposed) {
