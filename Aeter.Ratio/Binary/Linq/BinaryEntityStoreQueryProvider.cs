@@ -10,6 +10,10 @@ using System.Reflection;
 
 namespace Aeter.Ratio.Binary.Linq
 {
+    /// <summary>
+    /// Query provider that rewrites IQueryable expressions into Enumerable invocations
+    /// so that BinaryEntityStore queries can execute in memory after materializing a slice of the store.
+    /// </summary>
     internal sealed class BinaryEntityStoreQueryProvider : IQueryProvider
     {
         private readonly BinaryEntityStoreQueryContext context;
@@ -49,6 +53,9 @@ namespace Aeter.Ratio.Binary.Linq
             return (TResult)Execute(expression);
         }
 
+        /// <summary>
+        /// Executes the specified query expression, returning the final result (scalar or sequence).
+        /// </summary>
         public object? Execute(Expression expression)
         {
             ArgumentNullException.ThrowIfNull(expression);
@@ -59,6 +66,9 @@ namespace Aeter.Ratio.Binary.Linq
             return EnsureResultType(expression.Type, result);
         }
 
+        /// <summary>
+        /// Materializes the current query specification into an enumerable that feeds the LINQ pipeline.
+        /// </summary>
         private BinaryEntityStoreEnumerableResult CreateEnumerable(BinaryEntityStoreQuerySpecification specification)
         {
             var generic = CreateEnumerableMethod.MakeGenericMethod(specification.ElementType);
@@ -103,6 +113,9 @@ namespace Aeter.Ratio.Binary.Linq
             public IEnumerable Source { get; }
         }
 
+        /// <summary>
+        /// Expression visitor that swaps Queryable operators with Enumerable counterparts and compiles the resulting delegate.
+        /// </summary>
         private sealed class BinaryEntityStoreEnumerableExecutor : ExpressionVisitor
         {
             private static readonly IDictionary<string, List<MethodInfo>> EnumerableMethods = typeof(Enumerable)

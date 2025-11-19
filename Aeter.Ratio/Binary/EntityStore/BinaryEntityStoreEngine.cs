@@ -12,6 +12,10 @@ using System.Threading.Tasks;
 
 namespace Aeter.Ratio.Binary.EntityStore
 {
+    /// <summary>
+    /// Coordinates persistence, indexing, change tracking, and querying for entities stored in the binary entity store.
+    /// Provides CRUD operations together with LINQ integration over the stored payloads.
+    /// </summary>
     public class BinaryEntityStoreEngine : IDisposable, IAsyncDisposable
     {
         private BinaryEntityStoreHeader? header;
@@ -28,6 +32,9 @@ namespace Aeter.Ratio.Binary.EntityStore
         private BinaryEntityStoreIndexEngine? indexEngine;
         private BinaryEntityStoreQueryProvider? queryProvider;
 
+        /// <summary>
+        /// Creates an engine backed by pre-built store infrastructure.
+        /// </summary>
         public BinaryEntityStoreEngine(BinaryEntityStoreFileSystem fileSystem, BinaryEntityStore store, BinaryBufferPool bufferPool, Scheduler scheduler, BinaryEntityStoreToc toc, BinaryEntityStoreLockManager lockManager, ScheduledTaskHandle initHandle)
         {
             this.fileSystem = fileSystem;
@@ -39,6 +46,12 @@ namespace Aeter.Ratio.Binary.EntityStore
             initializationTask = InitializeAsync(initHandle, bufferPool);
         }
 
+        /// <summary>
+        /// Creates a new engine that stores its data at <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path">Location of the entity store file.</param>
+        /// <param name="bufferPool">Buffer pool used for IO allocations.</param>
+        /// <param name="cancellationToken">Token used to cancel initialization.</param>
         public static async Task<BinaryEntityStoreEngine> CreateAsync(string path, BinaryBufferPool bufferPool, CancellationToken cancellationToken = default)
         {
             var fileSystem = new BinaryEntityStoreFileSystem(path);
@@ -50,6 +63,12 @@ namespace Aeter.Ratio.Binary.EntityStore
             return new BinaryEntityStoreEngine(fileSystem, store, bufferPool, scheduler, toc, lockManager, initHandle);
         }
 
+        /// <summary>
+        /// Adds <paramref name="entity"/> to the store with a generated identifier.
+        /// </summary>
+        /// <param name="entity">Entity to persist.</param>
+        /// <param name="cancellationToken">Token used to cancel the write.</param>
+        /// <returns>The identifier assigned to the persisted entity.</returns>
         public async Task<Guid> AddAsync(object entity, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(entity);
@@ -58,6 +77,12 @@ namespace Aeter.Ratio.Binary.EntityStore
             return id;
         }
 
+        /// <summary>
+        /// Adds the supplied entity under a specific identifier.
+        /// </summary>
+        /// <param name="id">Entity identifier (must be non-empty).</param>
+        /// <param name="entity">Entity to persist.</param>
+        /// <param name="cancellationToken">Token used to cancel the write.</param>
         public async Task AddAsync(Guid id, object entity, CancellationToken cancellationToken = default)
         {
             if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
@@ -70,6 +95,12 @@ namespace Aeter.Ratio.Binary.EntityStore
             await WriteEntityAsync(id, entity, EntityChangeType.Added, cancellationToken).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Replaces the payload of an existing entity.
+        /// </summary>
+        /// <param name="id">Identifier of the entity to update.</param>
+        /// <param name="entity">Replacement entity.</param>
+        /// <param name="cancellationToken">Token used to cancel writes.</param>
         public async Task UpdateAsync(Guid id, object entity, CancellationToken cancellationToken = default)
         {
             if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
@@ -85,6 +116,11 @@ namespace Aeter.Ratio.Binary.EntityStore
             await WriteEntityAsync(id, entity, EntityChangeType.Updated, cancellationToken).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Removes the entity with the specified identifier if present.
+        /// </summary>
+        /// <param name="id">Identifier to remove.</param>
+        /// <param name="cancellationToken">Token used to cancel writes.</param>
         public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         {
             if (id == Guid.Empty) throw new ArgumentNullException(nameof(id));
@@ -99,10 +135,22 @@ namespace Aeter.Ratio.Binary.EntityStore
             await events.RaiseEntityChangedAsync(new EntityEngineEventsChangedArgs(id, null, ReadOnlyMemory<byte>.Empty, EntityChangeType.Deleted));
         }
 
+        /// <summary>
+        /// Retrieves the entity with identifier <paramref name="id"/> and deserializes it as <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">Type to materialize.</typeparam>
+        /// <param name="id">Identifier to read.</param>
+        /// <param name="cancellationToken">Token used to cancel reads.</param>
         public async Task<T?> GetAsync<T>(Guid id, CancellationToken cancellationToken = default)
             where T : class
             => (T?)await GetAsync(id, typeof(T), cancellationToken);
 
+        /// <summary>
+        /// Retrieves the entity with identifier <paramref name="id"/> and deserializes it as <paramref name="type"/>.
+        /// </summary>
+        /// <param name="id">Identifier to read.</param>
+        /// <param name="type">Type to materialize.</param>
+        /// <param name="cancellationToken">Token used to cancel reads.</param>
         public async Task<object?> GetAsync(Guid id, Type type, CancellationToken cancellationToken = default)
         {
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
@@ -113,13 +161,21 @@ namespace Aeter.Ratio.Binary.EntityStore
             }
             return default;
         }
-
+        /// <summary>
+        /// Starts a LINQ query against the entities stored in this engine.
+        /// Queries automatically switch between index scans, enumerating the binary store, or running entirely in memory based on the data shape.
+        /// <param name="cancellationToken">Token used to ensure the engine is initialized before issuing the query.</param>
         public IQueryable<T> Query<T>(CancellationToken cancellationToken = default)
         {
             EnsureInitializedAsync(cancellationToken).GetAwaiter().GetResult();
             return new BinaryEntityStoreQueryable<T>(EnsureQueryProvider());
         }
 
+        /// <summary>
+        /// Starts a non-generic LINQ query against the stored entities.
+        /// Use this overload when the entity type is only known at runtime.
+        /// <param name="entityType">Entity type being queried.</param>
+        /// <param name="cancellationToken">Token used to ensure initialization before querying.</param>
         public IQueryable Query(Type entityType, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(entityType);
@@ -127,12 +183,18 @@ namespace Aeter.Ratio.Binary.EntityStore
             return EnsureQueryProvider().CreateQuery(entityType);
         }
 
+        /// <summary>
+        /// Disposes the engine and underlying file handles synchronously.
+        /// </summary>
         public void Dispose()
         {
             DisposeAsyncCore().GetAwaiter().GetResult();
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Disposes the engine asynchronously, awaiting outstanding operations.
+        /// </summary>
         public async ValueTask DisposeAsync()
         {
             await DisposeAsyncCore().ConfigureAwait(false);
@@ -183,6 +245,9 @@ namespace Aeter.Ratio.Binary.EntityStore
         private Task EnsureInitializedAsync(CancellationToken cancellationToken)
             => initializationTask.WaitAsync(cancellationToken);
 
+        /// <summary>
+        /// Lazily builds the LINQ query provider wrapping this engine.
+        /// </summary>
         private BinaryEntityStoreQueryProvider EnsureQueryProvider()
         {
             var serializerInstance = serializer ?? throw new InvalidOperationException("Binary entity store engine has not been initialized yet.");
@@ -225,6 +290,10 @@ namespace Aeter.Ratio.Binary.EntityStore
             return memoryStream.ToArray();
         }
 
+        /// <summary>
+        /// Compacts the underlying store by moving active records to close gaps left by deletions.
+        /// </summary>
+        /// <param name="cancellationToken">Token used to cancel the shrink operation.</param>
         public async Task ShrinkAsync(CancellationToken cancellationToken = default)
         {
             await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);

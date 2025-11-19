@@ -9,8 +9,14 @@ using System.Linq.Expressions;
 
 namespace Aeter.Ratio.Binary.Linq
 {
+    /// <summary>
+    /// Lightweight IQueryable implementation that forwards query evaluation to <see cref="BinaryEntityStoreQueryProvider"/>.
+    /// </summary>
     internal sealed class BinaryEntityStoreQueryable<T> : IOrderedQueryable<T>
     {
+        /// <summary>
+        /// Creates a queryable bound to the supplied provider.
+        /// </summary>
         internal BinaryEntityStoreQueryable(BinaryEntityStoreQueryProvider provider)
         {
             Provider = provider ?? throw new ArgumentNullException(nameof(provider));
@@ -30,6 +36,7 @@ namespace Aeter.Ratio.Binary.Linq
         public Expression Expression { get; }
         public IQueryProvider Provider { get; }
 
+        /// <inheritdoc />
         public IEnumerator<T> GetEnumerator()
         {
             var result = Provider.Execute(Expression);

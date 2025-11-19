@@ -9,6 +9,10 @@ using System.Linq;
 
 namespace Aeter.Ratio.Binary.Linq
 {
+    /// <summary>
+    /// Coordinates how LINQ queries retrieve entities from the binary store.
+    /// Decides whether to use indexes, iterate the file sequentially, or materialize the dataset in memory.
+    /// </summary>
     internal sealed class BinaryEntityStoreQueryContext
     {
         private const int DefaultInMemoryThreshold = 256;
@@ -35,6 +39,9 @@ namespace Aeter.Ratio.Binary.Linq
             this.inMemoryThreshold = inMemoryThreshold > 0 ? inMemoryThreshold : DefaultInMemoryThreshold;
         }
 
+        /// <summary>
+        /// Builds the IEnumerable that will back a query for the specified entity type.
+        /// </summary>
         internal IEnumerable<T> CreateEnumerableCore<T>(BinaryEntityStoreQuerySpecification specification)
         {
             ArgumentNullException.ThrowIfNull(specification);

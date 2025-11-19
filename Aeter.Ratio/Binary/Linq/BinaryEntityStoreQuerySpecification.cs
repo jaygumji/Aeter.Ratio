@@ -8,6 +8,9 @@ using System.Linq.Expressions;
 
 namespace Aeter.Ratio.Binary.Linq
 {
+    /// <summary>
+    /// Captures the predicates and potential index filters extracted from a LINQ query expression.
+    /// </summary>
     internal sealed class BinaryEntityStoreQuerySpecification
     {
         private readonly IReadOnlyList<LambdaExpression> predicates;
@@ -23,6 +26,9 @@ namespace Aeter.Ratio.Binary.Linq
         public Type ElementType { get; }
         public IReadOnlyList<BinaryEntityStoreIndexFilter> IndexFilters => indexFilters;
 
+        /// <summary>
+        /// Parses the supplied query expression into a specification that can be executed by the query context.
+        /// </summary>
         public static BinaryEntityStoreQuerySpecification Create(BinaryEntityStoreQueryProvider provider, Expression expression)
         {
             ArgumentNullException.ThrowIfNull(provider);
@@ -35,6 +41,9 @@ namespace Aeter.Ratio.Binary.Linq
             return new BinaryEntityStoreQuerySpecification(elementType, analyzer.Predicates, analyzer.IndexCandidates);
         }
 
+        /// <summary>
+        /// Compiles the captured predicate expressions into a single delegate suitable for in-memory filtering.
+        /// </summary>
         public Func<T, bool>? CreatePredicate<T>()
         {
             if (predicates.Count == 0) {
@@ -57,6 +66,9 @@ namespace Aeter.Ratio.Binary.Linq
         }
     }
 
+    /// <summary>
+    /// Visits a query expression to determine element type, predicates, and potential index-able filters.
+    /// </summary>
     internal sealed class BinaryEntityStoreQueryAnalyzer : ExpressionVisitor
     {
         private readonly BinaryEntityStoreQueryProvider provider;
@@ -106,6 +118,9 @@ namespace Aeter.Ratio.Binary.Linq
         }
     }
 
+    /// <summary>
+    /// Represents a candidate equality filter that can be satisfied by the index engine.
+    /// </summary>
     internal readonly struct BinaryEntityStoreIndexFilter
     {
         public BinaryEntityStoreIndexFilter(string path, object value)
