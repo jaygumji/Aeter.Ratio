@@ -15,6 +15,7 @@ There is a serialization engine, that enables serialization from .NET classes to
 
 The current version have support for the following formats:
 - JSON
+- BSON
 - A binary serializer
 
 The serializer classes should be reused during the entire process lifetime to cache the generated classes which handles the hierarchial class traversion. Otherwise the serialization will be very slow.

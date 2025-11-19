@@ -6,15 +6,23 @@ using System.Reflection.Emit;
 
 namespace Aeter.Ratio.Reflection.Emit
 {
+    /// <summary>
+    /// Base class for pointers representing constant literals.
+    /// </summary>
     public abstract class ILConstantPointer : ILPointer
     {
+        /// <inheritdoc />
         public override Type Type { get; }
 
+        /// <summary>
+        /// Creates the pointer for the supplied constant type.
+        /// </summary>
         protected ILConstantPointer(Type type)
         {
             Type = type;
         }
 
+        /// <inheritdoc />
         protected override void LoadAddress(ILGenerator il)
         {
             Load(il);

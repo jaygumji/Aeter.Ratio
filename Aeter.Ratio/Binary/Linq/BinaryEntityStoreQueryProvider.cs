@@ -50,7 +50,7 @@ namespace Aeter.Ratio.Binary.Linq
         public TResult Execute<TResult>(Expression expression)
         {
             ArgumentNullException.ThrowIfNull(expression);
-            return (TResult)Execute(expression);
+            return (TResult)Execute(expression)!;
         }
 
         /// <summary>

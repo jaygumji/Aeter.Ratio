@@ -7,12 +7,18 @@ using System.Reflection.Emit;
 
 namespace Aeter.Ratio.Reflection.Emit
 {
+    /// <summary>
+    /// Helper that exposes a simplified API for defining transient dynamic assemblies and types.
+    /// </summary>
     public class AssemblyBuilderKit
     {
         private readonly string _name;
         private readonly System.Reflection.Emit.AssemblyBuilder _assemblyBuilder;
         private readonly ModuleBuilder _module;
 
+        /// <summary>
+        /// Initializes a new dynamic assembly + module pair with a random name.
+        /// </summary>
         public AssemblyBuilderKit()
         {
             _name = "AeterRatioDynamicEmit." + Guid.NewGuid().ToString("N");
@@ -21,6 +27,12 @@ namespace Aeter.Ratio.Reflection.Emit
             _module = _assemblyBuilder.DefineDynamicModule(_name);
         }
 
+        /// <summary>
+        /// Defines a new runtime type with the provided base class and interface implementations.
+        /// </summary>
+        /// <param name="name">Short name of the type (the module name is prefixed automatically).</param>
+        /// <param name="inherits">Base class for the type.</param>
+        /// <param name="implements">Interfaces the type must implement.</param>
         public ClassBuilder DefineClass(string name, Type inherits, Type[] implements)
         {
             const TypeAttributes attributes = TypeAttributes.Class | TypeAttributes.AnsiClass | TypeAttributes.AutoClass | TypeAttributes.BeforeFieldInit;

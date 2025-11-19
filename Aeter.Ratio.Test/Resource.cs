@@ -10,9 +10,7 @@ namespace Aeter.Ratio.Test
     {
         public static Stream Get(string name)
         {
-#pragma warning disable CS8603 // Possible null reference return.
-            return typeof(Resource).GetTypeInfo().Assembly.GetManifestResourceStream(name);
-#pragma warning restore CS8603 // Possible null reference return.
+            return typeof(Resource).GetTypeInfo().Assembly.GetManifestResourceStream(name)!;
         }
     }
 }

@@ -40,12 +40,14 @@ namespace Aeter.Ratio.Binary.Linq
         public IEnumerator<T> GetEnumerator()
         {
             var result = Provider.Execute(Expression);
+            if (result is null) return Enumerable.Empty<T>().GetEnumerator();
             return ((IEnumerable<T>)result).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             var result = Provider.Execute(Expression);
+            if (result is null) return Enumerable.Empty<T>().GetEnumerator();
             return ((IEnumerable)result).GetEnumerator();
         }
     }

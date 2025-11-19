@@ -14,17 +14,32 @@ namespace Aeter.Ratio
         private const int MaxLength = 10;
         private readonly string _value;
 
+        /// <summary>
+        /// Creates an identifier from <paramref name="value"/> after validating allowed characters/length.
+        /// </summary>
         public ARID(string value)
         {
             _value = NormalizeAndValidate(value);
         }
 
+        /// <summary>
+        /// Gets the number of characters stored by this identifier.
+        /// </summary>
         public int Length => _value.Length;
 
+        /// <summary>
+        /// Implicitly converts the identifier to its string representation.
+        /// </summary>
         public static implicit operator string(ARID id) => id._value;
 
+        /// <summary>
+        /// Explicitly converts a string into an identifier instance.
+        /// </summary>
         public static explicit operator ARID(string value) => new ARID(value);
 
+        /// <summary>
+        /// Constructs an identifier from a UTF-8 encoded byte span.
+        /// </summary>
         public static ARID ReadFrom(ReadOnlySpan<byte> source)
         {
             if (source.Length == 0) {
@@ -35,23 +50,38 @@ namespace Aeter.Ratio
             return new ARID(value);
         }
 
+        /// <summary>
+        /// Returns the normalized string representation of this identifier.
+        /// </summary>
         public override string ToString() => _value;
 
+        /// <inheritdoc />
         public override bool Equals(object? obj)
             => obj is ARID other && Equals(other);
 
+        /// <inheritdoc />
         public bool Equals(ARID? other)
             => other is not null && string.Equals(_value, other._value, StringComparison.Ordinal);
 
+        /// <inheritdoc />
         public override int GetHashCode()
             => StringComparer.Ordinal.GetHashCode(_value);
 
+        /// <summary>
+        /// Compares two identifiers for equality.
+        /// </summary>
         public static bool operator ==(ARID? left, ARID? right)
             => Equals(left, right);
 
+        /// <summary>
+        /// Determines whether two identifiers differ.
+        /// </summary>
         public static bool operator !=(ARID? left, ARID? right)
             => !Equals(left, right);
 
+        /// <summary>
+        /// Copies the identifier characters into <paramref name="destination"/>.
+        /// </summary>
         public void WriteTo(Span<char> destination)
         {
             if (destination.Length < _value.Length) {
@@ -61,6 +91,10 @@ namespace Aeter.Ratio
             _value.AsSpan().CopyTo(destination);
         }
 
+        /// <summary>
+        /// Writes the identifier as UTF-8 bytes into <paramref name="destination"/>.
+        /// </summary>
+        /// <returns>The number of bytes written.</returns>
         public int WriteTo(Span<byte> destination)
         {
             var required = Encoding.UTF8.GetByteCount(_value);

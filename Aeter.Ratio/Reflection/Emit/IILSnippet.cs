@@ -7,11 +7,20 @@ using System.Reflection.Emit;
 
 namespace Aeter.Ratio.Reflection.Emit
 {
+    /// <summary>
+    /// Describes a reusable block of IL instructions.
+    /// </summary>
     public interface IILSnippet
     {
+        /// <summary>
+        /// Emits the snippet into the supplied generator.
+        /// </summary>
         void Generate(ILGenerator il);
     }
 
+    /// <summary>
+    /// Base class that simplifies ILSnippet implementations.
+    /// </summary>
     public abstract class ILSnippet : IILSnippet
     {
         void IILSnippet.Generate(ILGenerator il)
@@ -19,18 +28,30 @@ namespace Aeter.Ratio.Reflection.Emit
             OnGenerate(il);
         }
 
+        /// <summary>
+        /// When implemented, emits the snippet body.
+        /// </summary>
         protected abstract void OnGenerate(ILGenerator il);
 
+        /// <summary>
+        /// Builds a snippet that calls a static method.
+        /// </summary>
         public static ILCallMethodSnippet Call(MethodInfo method, params ILPointer[] parameters)
         {
             return new ILCallMethodSnippet(method, parameters);
         }
 
+        /// <summary>
+        /// Builds a snippet that calls an instance method on <paramref name="instance"/>.
+        /// </summary>
         public static ILCallMethodSnippet Call(ILPointer instance, MethodInfo method, params ILPointer[] parameters)
         {
             return new ILCallMethodSnippet(instance, method, parameters);
         }
 
+        /// <summary>
+        /// Builds a snippet that calls a named method on the provided <paramref name="instance"/>.
+        /// </summary>
         public static ILCallMethodSnippet Call(ILPointer instance, string methodName, params ILPointer[] parameters)
         {
             if (instance == null) {

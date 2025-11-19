@@ -6,11 +6,23 @@ using System.Reflection.Emit;
 
 namespace Aeter.Ratio.Reflection.Emit
 {
+    /// <summary>
+    /// Represents a value that can load itself onto an <see cref="ILGenerator"/> evaluation stack.
+    /// </summary>
     public interface IILPointer
     {
+        /// <summary>
+        /// Gets the managed type of the pointer when known.
+        /// </summary>
         Type? Type { get; }
 
+        /// <summary>
+        /// Emits IL instructions that push the value represented by this pointer onto the stack.
+        /// </summary>
         void Load(ILGenerator il);
+        /// <summary>
+        /// Emits IL instructions that push the address of the pointer target onto the stack.
+        /// </summary>
         void LoadAddress(ILGenerator il);
     }
 }
