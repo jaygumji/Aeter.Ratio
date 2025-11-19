@@ -1,10 +1,12 @@
-﻿using Aeter.Ratio.IO;
+﻿using Aeter.Ratio.Binary.Linq;
+using Aeter.Ratio.IO;
 using Aeter.Ratio.Scheduling;
 using Aeter.Ratio.Serialization;
 using Aeter.Ratio.Serialization.Bson;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +26,7 @@ namespace Aeter.Ratio.Binary.EntityStore
         private readonly EntityEngineEventsManager events = new();
         private bool disposed;
         private BinaryEntityStoreIndexEngine? indexEngine;
+        private BinaryEntityStoreQueryProvider? queryProvider;
 
         public BinaryEntityStoreEngine(BinaryEntityStoreFileSystem fileSystem, BinaryEntityStore store, BinaryBufferPool bufferPool, Scheduler scheduler, BinaryEntityStoreToc toc, BinaryEntityStoreLockManager lockManager, ScheduledTaskHandle initHandle)
         {
@@ -111,6 +114,19 @@ namespace Aeter.Ratio.Binary.EntityStore
             return default;
         }
 
+        public IQueryable<T> Query<T>(CancellationToken cancellationToken = default)
+        {
+            EnsureInitializedAsync(cancellationToken).GetAwaiter().GetResult();
+            return new BinaryEntityStoreQueryable<T>(EnsureQueryProvider());
+        }
+
+        public IQueryable Query(Type entityType, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(entityType);
+            EnsureInitializedAsync(cancellationToken).GetAwaiter().GetResult();
+            return EnsureQueryProvider().CreateQuery(entityType);
+        }
+
         public void Dispose()
         {
             DisposeAsyncCore().GetAwaiter().GetResult();
@@ -166,6 +182,12 @@ namespace Aeter.Ratio.Binary.EntityStore
 
         private Task EnsureInitializedAsync(CancellationToken cancellationToken)
             => initializationTask.WaitAsync(cancellationToken);
+
+        private BinaryEntityStoreQueryProvider EnsureQueryProvider()
+        {
+            var serializerInstance = serializer ?? throw new InvalidOperationException("Binary entity store engine has not been initialized yet.");
+            return queryProvider ??= new BinaryEntityStoreQueryProvider(new BinaryEntityStoreQueryContext(store, toc, lockManager, serializerInstance, indexEngine));
+        }
 
         private bool TryGetActiveEntry(Guid id, [MaybeNullWhen(false)] out BinaryEntityStoreTocEntry entry)
         {

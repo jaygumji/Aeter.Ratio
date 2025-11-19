@@ -1,10 +1,8 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-using Aeter.Ratio.Binary;
 using Aeter.Ratio.Binary.EntityStore;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -16,7 +14,7 @@ namespace Aeter.Ratio.Test.Binary
 
         public BinaryEntityStoreEngineTests()
         {
-            workingDirectory = CreateTempDirectory();
+            workingDirectory = BinaryEntityStoreEngineTestUtilities.CreateTempDirectory();
         }
 
         [Fact]
@@ -102,13 +100,12 @@ namespace Aeter.Ratio.Test.Binary
 
         private async Task<BinaryEntityStoreEngine> CreateEngineInternalAsync()
         {
-            var storePath = Path.Combine(workingDirectory, Guid.NewGuid().ToString("N") + ".store");
-            return await BinaryEntityStoreEngine.CreateAsync(storePath, BinaryBufferPool.Default);
+            return await BinaryEntityStoreEngineTestUtilities.CreateEngineAsync(workingDirectory);
         }
 
         public void Dispose()
         {
-            TryDeleteDirectory(workingDirectory);
+            BinaryEntityStoreEngineTestUtilities.TryDeleteDirectory(workingDirectory);
         }
 
         public class SampleEntity
@@ -117,31 +114,5 @@ namespace Aeter.Ratio.Test.Binary
             public int Value { get; set; }
         }
 
-        private static string CreateTempDirectory()
-        {
-            for (var i = 0; i < 3; i++) {
-                var path = Path.Combine(Path.GetTempPath(), "aeter_ratio_engine_" + Guid.NewGuid().ToString("N"));
-                try {
-                    Directory.CreateDirectory(path);
-                    return path;
-                }
-                catch (UnauthorizedAccessException) when (i < 2) {
-                    continue;
-                }
-            }
-            throw new InvalidOperationException("Unable to create temporary working directory for BinaryEntityStoreEngine tests.");
-        }
-
-        private static void TryDeleteDirectory(string path)
-        {
-            try {
-                if (Directory.Exists(path)) {
-                    Directory.Delete(path, recursive: true);
-                }
-            }
-            catch (UnauthorizedAccessException) {
-                // ignore cleanup failures
-            }
-        }
     }
 }
