@@ -53,7 +53,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
             VisitArgsForIndex = visitArgsType.FindMethod(nameof(VisitArgs.ForIndex));
 
-            var readVisitorType = typeof(IReadVisitor).GetTypeInfo();
+            var readVisitorType = typeof(IReadVisitor);
             VisitorTryVisit = readVisitorType.FindMethod(nameof(IReadVisitor.TryVisit));
             VisitorLeave = readVisitorType.FindMethod(nameof(IReadVisitor.Leave));
 

@@ -160,7 +160,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
         private ILPointer GenerateCollectionContent(ExtendedType target, string refName)
         {
             var collectionMembers = new CollectionMembers(target);
-            var isValueType = collectionMembers.ElementType.GetTypeInfo().IsValueType;
+            var isValueType = collectionMembers.ElementType.IsValueType;
 
             var collectionLocal = _il.NewLocal(collectionMembers.VariableType);
             var collection = ILPointer.New(collectionMembers.Constructor)
@@ -409,7 +409,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
 
         private ILLocalVariable DeclareCollectionItemLocal(Type type)
         {
-            var isValueType = type.GetTypeInfo().IsValueType;
+            var isValueType = type.IsValueType;
             var valueLocal = _il.NewLocal(isValueType ? Members.Nullable[type].NullableType : type);
             return valueLocal;
         }
@@ -431,7 +431,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
         {
             var type = local.Type;
 
-            var constructor = type.GetTypeInfo().GetConstructor(Type.EmptyTypes);
+            var constructor = type.GetConstructor(Type.EmptyTypes);
             if (constructor == null)
                 throw InvalidGraphException.NoParameterLessConstructor(type);
 

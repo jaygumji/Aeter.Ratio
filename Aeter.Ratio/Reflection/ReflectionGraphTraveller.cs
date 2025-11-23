@@ -33,7 +33,7 @@ namespace Aeter.Ratio.Reflection
 
         private void TravelRecursive(HashSet<Type> travelledTypes, Type type, IReflectionGraphPropertyVisitor visitor)
         {
-            var properties = type.GetTypeInfo().GetProperties(PropertyBindings);
+            var properties = type.GetProperties(PropertyBindings);
 
             foreach (var property in properties) {
                 visitor.Visit(property);

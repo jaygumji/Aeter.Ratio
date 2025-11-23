@@ -35,7 +35,7 @@ namespace Aeter.Ratio.Serialization.Reflection
 
         private SerializableType Build(Type type)
         {
-            var properties = type.GetTypeInfo().GetProperties(PropertyFlags);
+            var properties = type.GetProperties(PropertyFlags);
 
             UInt32 nextIndex = 1;
 

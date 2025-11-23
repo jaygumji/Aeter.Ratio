@@ -56,7 +56,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
         protected override void OnSet(ILGenerator il)
         {
-            if (Type.GetTypeInfo().IsValueType) {
+            if (Type.IsValueType) {
                 il.EmitCall(OpCodes.Call, Info.SetMethod!, null);
             }
             else {

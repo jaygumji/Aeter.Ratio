@@ -44,7 +44,7 @@ namespace Aeter.Ratio.Reflection.Emit
 
             var getEnumerator = ILSnippet.Call(_enumerable, enumerableType.GetRuntimeMethod("GetEnumerator", Type.EmptyTypes)!);
 
-            var elementType = enumerableType.GetTypeInfo().GetGenericArguments()[0];
+            var elementType = enumerableType.GetGenericArguments()[0];
             var itLocal = il.NewLocal(getEnumerator.ReturnType);
             il.Set(itLocal, getEnumerator);
 

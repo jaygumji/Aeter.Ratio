@@ -48,8 +48,7 @@ namespace Aeter.Ratio.DependencyInjection
                 }
             }
 
-            var info = type.GetTypeInfo();
-            var constructors = info.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var constructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             if (constructors.Length > 1) {
                 constructors = constructors.Where(c => c.IsPublic).ToArray();
@@ -102,7 +101,7 @@ namespace Aeter.Ratio.DependencyInjection
             }
 
             var factoryType = GetFactoryType(factoryTypes, out bool useDynamic);
-            var factoryConstructor = factoryType.GetTypeInfo().GetConstructors()[0];
+            var factoryConstructor = factoryType.GetConstructors()[0];
 
             if (useDynamic) {
                 factory = (IInstanceFactory)factoryConstructor.Invoke(new object[] {

@@ -33,7 +33,7 @@ namespace Aeter.Ratio.Reflection.Emit
             il.Load(_array);
             il.Load(_index);
 
-            if (Type.GetTypeInfo().IsClass) {
+            if (Type.IsClass) {
                 il.Emit(OpCodes.Ldelem_Ref);
             }
             else if (Type == typeof(byte)) {
@@ -80,7 +80,7 @@ namespace Aeter.Ratio.Reflection.Emit
             il.Load(_index);
             il.Load(value);
 
-            if (Type.GetTypeInfo().IsClass) {
+            if (Type.IsClass) {
                 il.Emit(OpCodes.Stelem_Ref);
             }
             else if (Type == typeof(byte)) {

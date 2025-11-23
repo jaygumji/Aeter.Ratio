@@ -43,7 +43,7 @@ namespace Aeter.Ratio.Reflection.Emit
         protected override void OnGenerate(ILGenerator il)
         {
             var instanceIsValueType = _instance?.Type != null
-                && _instance.Type.GetTypeInfo().IsValueType;
+                && _instance.Type.IsValueType;
 
             if (_instance != null) {
                 if (instanceIsValueType)

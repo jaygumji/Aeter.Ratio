@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 using System;
-using System.Reflection;
 
 namespace Aeter.Ratio.DependencyInjection
 {
@@ -31,7 +30,7 @@ namespace Aeter.Ratio.DependencyInjection
 
         private void IncludeAllInterfaces()
         {
-            foreach (var type in _registration.Type.GetTypeInfo().GetInterfaces()) {
+            foreach (var type in _registration.Type.GetInterfaces()) {
                 _registrator.TryRegister(type, _registration);
             }
         }
@@ -50,10 +49,11 @@ namespace Aeter.Ratio.DependencyInjection
 
         private void IncludeAllBaseTypes()
         {
-            var info = _registration.Type.GetTypeInfo();
-            while (info.BaseType != null) {
-                _registrator.TryRegister(info.BaseType, _registration);
-                info = info.BaseType.GetTypeInfo();
+            var current = _registration.Type;
+            while (current.BaseType != null) {
+                var baseType = current.BaseType;
+                _registrator.TryRegister(baseType, _registration);
+                current = baseType;
             }
         }
 

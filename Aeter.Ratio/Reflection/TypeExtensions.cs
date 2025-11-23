@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
 
 namespace Aeter.Ratio.Reflection
 {
@@ -28,29 +27,27 @@ namespace Aeter.Ratio.Reflection
                 return new ArrayContainerTypeInfo(elementType!, ranks);
             }
 
-            var typeInfo = type.GetTypeInfo();
-            if (type.GetTypeInfo().IsGenericType) {
+            if (type.IsGenericType) {
                 var genericTypeDefinition = type.GetGenericTypeDefinition();
                 if (genericTypeDefinition == DictionaryType) {
-                    var arguments = typeInfo.GetGenericArguments();
+                    var arguments = type.GetGenericArguments();
                     return new DictionaryContainerTypeInfo(arguments[0], arguments[1]);
                 }
 
                 if (genericTypeDefinition == CollectionType)
-                    return new CollectionContainerTypeInfo(typeInfo.GetGenericArguments()[0]);
+                    return new CollectionContainerTypeInfo(type.GetGenericArguments()[0]);
 
                 if (genericTypeDefinition == NullableType)
-                    return new NullableContainerTypeInfo(type, typeInfo.GetGenericArguments()[0]);
+                    return new NullableContainerTypeInfo(type, type.GetGenericArguments()[0]);
             }
 
-            var interfaceTypes = typeInfo.GetInterfaces();
-            foreach (var interfaceType in interfaceTypes.Where(interfaceType => interfaceType.GetTypeInfo().IsGenericType)) {
+            var interfaceTypes = type.GetInterfaces();
+            foreach (var interfaceType in interfaceTypes.Where(interfaceType => interfaceType.IsGenericType)) {
                 var genericTypeDefinition = interfaceType.GetGenericTypeDefinition();
-                var interfaceTypeInfo = interfaceType.GetTypeInfo();
                 if (genericTypeDefinition == CollectionType)
-                    return new CollectionContainerTypeInfo(interfaceTypeInfo.GetGenericArguments()[0]);
+                    return new CollectionContainerTypeInfo(interfaceType.GetGenericArguments()[0]);
                 if (genericTypeDefinition == DictionaryType) {
-                    var arguments = interfaceTypeInfo.GetGenericArguments();
+                    var arguments = interfaceType.GetGenericArguments();
                     return new DictionaryContainerTypeInfo(arguments[0], arguments[1]);
                 }
             }
@@ -65,9 +62,8 @@ namespace Aeter.Ratio.Reflection
 
         public static bool TryGetInterface(this Type type, Type interfaceType, [MaybeNullWhen(false)] out Type matchedInterfaceType)
         {
-            var interfaces = type.GetTypeInfo().GetInterfaces();
-            var interfaceTypeInfo = interfaceType.GetTypeInfo();
-            var isGenericTypeDef = interfaceTypeInfo.IsGenericTypeDefinition;
+            var interfaces = type.GetInterfaces();
+            var isGenericTypeDef = interfaceType.IsGenericTypeDefinition;
             foreach (var itInterface in interfaces) {
                 if (isGenericTypeDef) {
                     if (itInterface.GetGenericTypeDefinition() == interfaceType) {
@@ -89,9 +85,8 @@ namespace Aeter.Ratio.Reflection
 
         public static TypeClassification GetClassification(this Type type, IContainerTypeInfo? containerInfo = null)
         {
-            var ti = type.GetTypeInfo();
-            if (ti.IsPrimitive) return TypeClassification.Value;
-            if (ti.IsEnum) return TypeClassification.Value;
+            if (type.IsPrimitive) return TypeClassification.Value;
+            if (type.IsEnum) return TypeClassification.Value;
             if (SystemValueClasses.Contains(type)) return TypeClassification.Value;
 
             if (containerInfo == null) {
@@ -113,14 +108,13 @@ namespace Aeter.Ratio.Reflection
 
         public static Type GetUnderlyingEnumType(this Type type)
         {
-            var info = type.GetTypeInfo();
-            if (info.IsEnum) return Enum.GetUnderlyingType(type);
+            if (type.IsEnum) return Enum.GetUnderlyingType(type);
 
-            if (info.IsGenericType) {
+            if (type.IsGenericType) {
                 var genericTypeDefinition = type.GetGenericTypeDefinition();
                 if (genericTypeDefinition == NullableType) {
                     var innerType = type.GenericTypeArguments[0];
-                    if (innerType.GetTypeInfo().IsEnum) {
+                    if (innerType.IsEnum) {
                         var underlyingType = Enum.GetUnderlyingType(innerType);
                         return NullableType.MakeGenericType(underlyingType);
                     }

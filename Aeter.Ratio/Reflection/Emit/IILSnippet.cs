@@ -60,7 +60,7 @@ namespace Aeter.Ratio.Reflection.Emit
             if (instance.Type == null) {
                 throw new ArgumentException("The instance type is missing.");
             }
-            var method = instance.Type.GetTypeInfo().GetMethod(methodName);
+            var method = instance.Type.GetMethod(methodName);
             if (method == null) {
                 throw new ArgumentException($"The method {methodName} could not be found on type {instance.Type.FullName}");
             }

@@ -33,7 +33,7 @@ namespace Aeter.Ratio.Serialization.Reflection.Emit
             //_classBuilder.DefinePublicReadOnlyProperty("Level", typeof(LevelType), LevelType.Single);
             _constructorBuilder = _classBuilder.DefineConstructor(typeof(IVisitArgsFactory));
 
-            var baseConstructor = typeof(object).GetTypeInfo().FindConstructor(Type.EmptyTypes);
+            var baseConstructor = typeof(object).FindConstructor(Type.EmptyTypes);
             var il = _constructorBuilder.GetILGenerator();
             il.LoadThis();
             il.Emit(OpCodes.Call, baseConstructor);

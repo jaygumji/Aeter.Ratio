@@ -1,8 +1,6 @@
 ﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-using Aeter.Ratio;
-using Aeter.Ratio.Binary;
 using Aeter.Ratio.Binary.Algorithm;
 using System;
 using System.Buffers;
@@ -90,8 +88,7 @@ namespace Aeter.Ratio.Binary.EntityStore
         /// <param name="cancellationToken">Token used to cancel initialization.</param>
         public async Task InitializeAsync(CancellationToken cancellationToken)
         {
-            await store.ReadAllAsync(async args =>
-            {
+            await store.ReadAllAsync(async args => {
                 var payloadLength = args.Size - BinaryStoreHeaderLength;
                 if (payloadLength <= 0) {
                     return;
@@ -107,6 +104,7 @@ namespace Aeter.Ratio.Binary.EntityStore
                 var rented = arrayPool.Rent(bufferLength);
                 try {
                     payload.Span.CopyTo(rented);
+                    // Materialize entry payload into a stream so BinaryReader can consume the same binary format produced by BinaryWriter.
                     using var stream = new MemoryStream(rented, 0, payload.Length, writable: false, publiclyVisible: true);
                     using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: false);
                     var entryKind = (BinaryEntityStoreIndexEntryKind)reader.ReadByte();
@@ -471,6 +469,7 @@ namespace Aeter.Ratio.Binary.EntityStore
         private static byte[] SerializeMutation(BinaryEntityStoreIndexMutation mutation)
         {
             using var stream = new MemoryStream();
+            // BinaryWriter ensures the serialized strings/guids match what BinaryReader expects during replay.
             using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
             writer.Write((byte)BinaryEntityStoreIndexEntryKind.Mutation);
             writer.Write((byte)mutation.Type);
@@ -482,7 +481,7 @@ namespace Aeter.Ratio.Binary.EntityStore
             return stream.ToArray();
         }
 
-        private static IComparer<object?> CreateValueComparer(Type type)
+        private static Comparer<object?> CreateValueComparer(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
             var underlying = Nullable.GetUnderlyingType(type) ?? type;
@@ -515,30 +514,17 @@ namespace Aeter.Ratio.Binary.EntityStore
             });
         }
 
-        private readonly struct BinaryEntityStoreIndexValue
+        private readonly struct BinaryEntityStoreIndexValue(Guid entityId, object? value, string text)
         {
-            public BinaryEntityStoreIndexValue(Guid entityId, object? value, string text)
-            {
-                EntityId = entityId;
-                Value = value;
-                Text = text;
-            }
-
-            public Guid EntityId { get; }
-            public object? Value { get; }
-            public string Text { get; }
+            public Guid EntityId { get; } = entityId;
+            public object? Value { get; } = value;
+            public string Text { get; } = text;
         }
 
-        private readonly struct EntityValueReference
+        private readonly struct EntityValueReference(object? value, string text)
         {
-            public EntityValueReference(object? value, string text)
-            {
-                Value = value;
-                Text = text;
-            }
-
-            public object? Value { get; }
-            public string Text { get; }
+            public object? Value { get; } = value;
+            public string Text { get; } = text;
         }
 
         private readonly struct BinaryEntityStoreIndexMutation
@@ -561,15 +547,8 @@ namespace Aeter.Ratio.Binary.EntityStore
                 => new(BinaryEntityStoreIndexMutationType.Remove, entityId, null);
         }
 
-        private sealed class IndexValueComparer : IComparer<BinaryEntityStoreIndexValue>
+        private sealed class IndexValueComparer(BinaryEntityStoreIndex owner) : IComparer<BinaryEntityStoreIndexValue>
         {
-            private readonly BinaryEntityStoreIndex owner;
-
-            public IndexValueComparer(BinaryEntityStoreIndex owner)
-            {
-                this.owner = owner;
-            }
-
             public int Compare(BinaryEntityStoreIndexValue x, BinaryEntityStoreIndexValue y)
             {
                 var comparerInstance = owner.valueComparer ?? throw new InvalidOperationException("Index not initialized.");

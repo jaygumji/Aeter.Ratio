@@ -33,7 +33,7 @@ namespace Aeter.Ratio.Serialization.Reflection
 
         private static IList<PropertyReflectionContext> ParseProperties(Type type, ITypeProvider provider)
         {
-            var properties = type.GetTypeInfo().GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Where(p => p.CanRead && p.CanWrite)
                 .Select(p => new PropertyReflectionContext(p, provider))
                 .ToList();

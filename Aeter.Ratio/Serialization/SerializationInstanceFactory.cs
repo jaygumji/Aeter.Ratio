@@ -30,7 +30,7 @@ namespace Aeter.Ratio.Serialization
                 return activator.Activate();
             }
 
-            var constructor = type.GetTypeInfo().GetConstructor(Type.EmptyTypes);
+            var constructor = type.GetConstructor(Type.EmptyTypes);
             if (constructor == null)
                 throw InvalidGraphException.NoParameterLessConstructor(type);
 
